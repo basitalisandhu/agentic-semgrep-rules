@@ -48,7 +48,7 @@ rules:
       technology: [python, openai, langchain, agent]
       references:
         - https://cwe.mitre.org/data/definitions/78.html
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink
 ```

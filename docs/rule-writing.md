@@ -103,6 +103,6 @@ Before opening a pull request, run the rule against real code (`make smoke SMOKE
 | `likelihood`, `impact` | HIGH, MEDIUM or LOW |
 | `technology` | libraries and runtimes the rule understands |
 | `references` | real https URLs: the OWASP entry, the CWE page, the library's own security docs |
-| `hisar.family` | `llm-output-to-sink`, `prompt-injection`, `excessive-agency`, `mcp-exposure`, `secrets`, `model-supply-chain` |
+| `masoon.family` | `llm-output-to-sink`, `prompt-injection`, `excessive-agency`, `mcp-exposure`, `secrets`, `model-supply-chain` |
 
 OWASP ids used: LLM01 Prompt Injection, LLM02 Sensitive Information Disclosure, LLM03 Supply Chain, LLM04 Data and Model Poisoning, LLM05 Improper Output Handling, LLM06 Excessive Agency, LLM07 System Prompt Leakage.

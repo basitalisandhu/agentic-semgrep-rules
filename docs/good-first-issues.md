@@ -54,15 +54,15 @@ patterns would pass the suite.
   raised by exactly the number of new `ruleid` lines.
 - `make bundle` run if any rule text changed.
 
-## 4. Enforce the `metadata.hisar` block in the metadata lint
+## 4. Enforce the `metadata.masoon` block in the metadata lint
 
-**Context.** Every rule carries `metadata.hisar.pack` and `metadata.hisar.family`
+**Context.** Every rule carries `metadata.masoon.pack` and `metadata.masoon.family`
 (see the rule anatomy in CONTRIBUTING.md), and SARIF consumers group on `family`, but
 `scripts/check_metadata.py` does not check the block, so a new rule can omit it.
 
 **Acceptance criteria.**
 
-- `check_metadata.py` fails when `metadata.hisar` is missing, when `pack` is not
+- `check_metadata.py` fails when `metadata.masoon` is missing, when `pack` is not
   `agentic-semgrep-rules`, or when `family` is not one of the values currently in use
   (collect them with `grep -h "family:" rules/*/*/*.yaml | sort -u` and list them in
   the script).

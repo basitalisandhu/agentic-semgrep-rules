@@ -1,0 +1,44 @@
+rules:
+  - id: fastmcp-bind-all-interfaces
+    languages: [python]
+    severity: WARNING
+    message: >-
+      This MCP server binds to 0.0.0.0, so every tool it exposes is reachable from any network
+      interface, including other containers, the LAN or the internet, depending on where it runs.
+      MCP tools typically read files, call APIs or run commands on behalf of whoever connects.
+      Bind to 127.0.0.1 unless remote access is intended; if it is, put the server behind TLS and
+      authentication (OAuth bearer tokens per the MCP authorization spec) and restrict it with a
+      firewall or network policy.
+    patterns:
+      - pattern-either:
+          - pattern: FastMCP(..., host="0.0.0.0", ...)
+          - pattern: FastMCP(..., host="::", ...)
+          - pattern: $MCP.run(..., host="0.0.0.0", ...)
+          - pattern: $MCP.run(..., host="::", ...)
+          - pattern: $MCP.run_sse_async(..., host="0.0.0.0", ...)
+          - pattern: $MCP.run_http_async(..., host="0.0.0.0", ...)
+          - pattern: $MCP.run_streamable_http_async(..., host="0.0.0.0", ...)
+          - pattern: $MCP.settings.host = "0.0.0.0"
+          - pattern: $MCP.settings.host = "::"
+          - pattern: uvicorn.run($MCP.sse_app(...), ..., host="0.0.0.0", ...)
+          - pattern: uvicorn.run($MCP.streamable_http_app(...), ..., host="0.0.0.0", ...)
+          - pattern: uvicorn.run($MCP.http_app(...), ..., host="0.0.0.0", ...)
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-1327: Binding to an Unrestricted IP Address"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [python, mcp, fastmcp, uvicorn, agent]
+      references:
+        - https://cwe.mitre.org/data/definitions/1327.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
+        - https://github.com/modelcontextprotocol/python-sdk
+      hisar:
+        pack: agentic-semgrep-rules
+        family: mcp-exposure

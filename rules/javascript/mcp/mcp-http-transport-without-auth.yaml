@@ -1,0 +1,67 @@
+rules:
+  - id: mcp-http-transport-without-auth
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      An MCP HTTP transport ('$TRANSPORT') is created inside a route handler that has no
+      authentication middleware, and none is registered with app.use() before it. Anyone who can
+      reach the port can list and call every tool this server exposes, and SSE and streamable-HTTP
+      endpoints are also reachable from browsers via DNS rebinding. Protect the route with the SDK's
+      requireBearerAuth middleware (or your own token or session check), enable
+      enableDnsRebindingProtection with allowedHosts, bind to localhost unless remote access is
+      intended, and put TLS in front. Use the stdio transport for local, single-user servers.
+    patterns:
+      - pattern-either:
+          - pattern: new $TRANSPORT(...)
+      - metavariable-regex:
+          metavariable: $TRANSPORT
+          regex: ^(StreamableHTTPServerTransport|SSEServerTransport|WebStandardStreamableHTTPServerTransport|NodeStreamableHTTPServerTransport)$
+      - pattern-either:
+          - pattern-inside: |
+              $APP.$METHOD($PATH, async (...) => { ... })
+          - pattern-inside: |
+              $APP.$METHOD($PATH, (...) => { ... })
+          - pattern-inside: |
+              $APP.$METHOD($PATH, function (...) { ... })
+          - pattern-inside: |
+              $APP.$METHOD($PATH, async function (...) { ... })
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|all|use|delete)$
+      - pattern-not-inside:
+          patterns:
+            - pattern-either:
+                - pattern: |
+                    $APP.use(..., $MW, ...);
+                    ...
+                - pattern: |
+                    $APP.use($P, ..., $MW, ...);
+                    ...
+            - metavariable-pattern:
+                metavariable: $MW
+                pattern-regex: (?i)(auth|jwt|token|verif|session|passport|apikey|api_key|bearer|protect|guard)
+      - pattern-not-inside: |
+          $APP.use(requireBearerAuth(...));
+          ...
+      - pattern-not-inside: |
+          $APP.use($P, requireBearerAuth(...));
+          ...
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-306: Missing Authentication for Critical Function"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [javascript, typescript, node, express, mcp, modelcontextprotocol, agent]
+      references:
+        - https://cwe.mitre.org/data/definitions/306.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
+        - https://github.com/modelcontextprotocol/typescript-sdk#running-your-server
+      hisar:
+        pack: agentic-semgrep-rules
+        family: mcp-exposure

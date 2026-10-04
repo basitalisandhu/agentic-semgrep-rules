@@ -1,0 +1,19 @@
+# Use this pack as a pre-commit hook:
+#
+#   repos:
+#     - repo: https://github.com/basitalisandhu/agentic-semgrep-rules
+#       rev: v1.0.0
+#       hooks:
+#         - id: agentic-semgrep-rules
+#
+# The hook runs the bundled rules on staged Python, TypeScript and JavaScript files. It needs
+# `semgrep` on your PATH (pip install semgrep); it is a `script` hook rather than a `python` one
+# because this repository is not a Python package and pre-commit would try to pip-install it.
+- id: agentic-semgrep-rules
+  name: agentic-semgrep-rules
+  description: Scan LLM-agent code for insecure patterns (model output to exec/shell/SQL/SSRF/XSS, prompt injection, over-broad tools, exposed MCP servers, leaked keys, unsafe model loading).
+  entry: scripts/pre-commit-hook.sh
+  language: script
+  types_or: [python, javascript, jsx, ts, tsx]
+  pass_filenames: true
+  require_serial: true

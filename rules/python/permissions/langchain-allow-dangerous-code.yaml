@@ -1,0 +1,29 @@
+rules:
+  - id: langchain-allow-dangerous-code
+    languages: [python]
+    severity: WARNING
+    message: >-
+      'allow_dangerous_code=True' opts into LangChain components (pandas, CSV, Spark or Python agents) that execute model-generated Python in this process. Any prompt injection reaching the agent becomes arbitrary code execution with the process's credentials. Remove the flag and use a structured tool for the analysis you need, or run the agent inside a disposable sandbox (separate container, no secrets, no network, resource limits) and treat its output as untrusted.
+    patterns:
+      - pattern-either:
+          - pattern: $CALL(..., allow_dangerous_code=True, ...)
+          - pattern: $OBJ.$CALL(..., allow_dangerous_code=True, ...)
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, langchain, langchain-community, langchain-experimental, llm, agent]
+      references:
+        - https://python.langchain.com/docs/security/
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://cwe.mitre.org/data/definitions/94.html
+        - https://python.langchain.com/api_reference/experimental/agents/langchain_experimental.agents.agent_toolkits.pandas.base.create_pandas_dataframe_agent.html
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

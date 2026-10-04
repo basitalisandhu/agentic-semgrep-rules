@@ -1,0 +1,38 @@
+rules:
+  - id: transformers-trust-remote-code
+    languages: [python]
+    severity: WARNING
+    message: >-
+      trust_remote_code=True downloads and executes Python code from the model or dataset
+      repository at load time, with this process's credentials and network access. A compromised
+      or typosquatted repository, or a force-pushed revision, becomes remote code execution.
+      Remove the flag and use a natively supported architecture if you can. If remote code is
+      required, pin an exact commit with revision="<sha>", review that code, and load it in an
+      isolated environment without secrets.
+    patterns:
+      - pattern-either:
+          - pattern: $FUNC(..., trust_remote_code=True, ...)
+          - pattern: $OBJ.$FUNC(..., trust_remote_code=True, ...)
+      # A pinned revision (full commit sha) means the remote code was reviewed at a fixed version.
+      - pattern-not: $FUNC(..., revision="=~/^[0-9a-f]{40}$/", ...)
+      - pattern-not: $OBJ.$FUNC(..., revision="=~/^[0-9a-f]{40}$/", ...)
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-829: Inclusion of Functionality from Untrusted Control Sphere"
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp:
+        - "LLM03:2025 Supply Chain"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, transformers, huggingface, datasets, vllm, ml, llm]
+      references:
+        - https://cwe.mitre.org/data/definitions/829.html
+        - https://huggingface.co/docs/transformers/main/en/model_doc/auto#transformers.AutoModel.from_pretrained
+        - https://huggingface.co/docs/hub/security
+        - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: model-supply-chain

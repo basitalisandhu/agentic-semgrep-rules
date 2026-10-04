@@ -1,0 +1,93 @@
+rules:
+  - id: llm-output-to-innerhtml
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Text returned by a language model is inserted into the DOM as HTML by '$SINK'. Models can be
+      made to emit script tags, event handlers or markdown with embedded HTML, which turns a prompt
+      injection into cross-site scripting against whoever views the answer (session theft, actions
+      in the user's browser). Render model output as text (textContent, React children), or convert
+      markdown with HTML disabled and sanitise the result with DOMPurify before inserting it.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: generateText(...)
+        exact: true
+      - pattern: streamText(...)
+        exact: true
+      - pattern: generateObject(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generateContent(...)
+        exact: true
+      - pattern: $CLIENT.models.generateContent(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.stream(...)
+              - pattern: $X.batch(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R.response.text()
+    pattern-sanitizers:
+      - pattern: DOMPurify.sanitize(...)
+      - pattern: sanitizeHtml(...)
+      - pattern: sanitize(...)
+      - pattern: escapeHtml(...)
+      - pattern: escape(...)
+      - pattern: xss(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $EL.innerHTML = $HTML
+              - pattern: $EL.outerHTML = $HTML
+              - pattern: $EL.innerHTML += $HTML
+              - pattern: $EL.insertAdjacentHTML($POS, $HTML)
+              - pattern: document.write($HTML)
+              - pattern: document.writeln($HTML)
+              - pattern: '{ __html: $HTML }'
+              - pattern: $EL.html($HTML)
+              - pattern: $($HTML)
+              - pattern: jQuery($HTML)
+              - pattern: $EL.setHTMLUnsafe($HTML)
+              - pattern: new DOMParser().parseFromString($HTML, ...)
+          - focus-metavariable: $HTML
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, react, dom, jquery, express, openai, anthropic, langchain, llm]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/79.html
+        - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
+        - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

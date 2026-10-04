@@ -1,0 +1,68 @@
+rules:
+  - id: fastmcp-http-transport-without-auth
+    languages: [python]
+    severity: WARNING
+    message: >-
+      This MCP server is started with an HTTP-based transport ('$TRANSPORT') but the FastMCP
+      instance was created without an auth provider or token verifier. Anyone who can reach the
+      port can list and call every tool, and SSE and streamable-HTTP endpoints are also exposed to
+      cross-origin and DNS-rebinding attacks from the browser. Configure authentication
+      (the SDK's auth settings with a token verifier, or FastMCP's auth providers), validate the
+      Origin header, bind to localhost unless remote access is intended, and put TLS in front.
+      Use the stdio transport for local, single-user servers.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $MCP.run(..., transport="$TRANSPORT", ...)
+              - metavariable-regex:
+                  metavariable: $TRANSPORT
+                  regex: ^(sse|streamable-http|http)$
+          - pattern: $MCP.run_sse_async(...)
+          - pattern: $MCP.run_streamable_http_async(...)
+          - pattern: $MCP.run_http_async(...)
+          - pattern: uvicorn.run($MCP.sse_app(...), ...)
+          - pattern: uvicorn.run($MCP.streamable_http_app(...), ...)
+          - pattern: uvicorn.run($MCP.http_app(...), ...)
+      # Known limitation: an attribute assignment on the server object (for example
+      # mcp.settings.host = "...") between construction and run() breaks the exclusions below,
+      # so a server with auth configured in the constructor can still be reported in that case.
+      - pattern-not-inside: |
+          $MCP = FastMCP(..., auth=$AUTH, ...)
+          ...
+      - pattern-not-inside: |
+          $MCP = FastMCP(..., token_verifier=$VERIFIER, ...)
+          ...
+      - pattern-not-inside: |
+          $MCP = FastMCP(..., auth_server_provider=$PROVIDER, ...)
+          ...
+      - pattern-not-inside: |
+          $MCP = FastMCP(..., middleware=$MW, ...)
+          ...
+      - pattern-not-inside: |
+          $MCP.auth = $AUTH
+          ...
+      - pattern-not-inside: |
+          $MCP.settings.auth = $AUTH
+          ...
+      - pattern-not-inside: |
+          $MCP.add_middleware(...)
+          ...
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-306: Missing Authentication for Critical Function"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, mcp, fastmcp, agent]
+      references:
+        - https://cwe.mitre.org/data/definitions/306.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
+        - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
+        - https://gofastmcp.com/servers/auth/authentication
+      hisar:
+        pack: agentic-semgrep-rules
+        family: mcp-exposure

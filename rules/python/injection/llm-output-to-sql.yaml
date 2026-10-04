@@ -1,0 +1,92 @@
+rules:
+  - id: llm-output-to-sql
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Text returned by a language model is used as a SQL statement (or interpolated into one) and
+      executed. A prompt injection becomes SQL injection: data exfiltration, modification or
+      deletion with the privileges of the database user. Never execute model-written SQL directly.
+      Use parameterised queries where the model only supplies values, or run model-generated SQL
+      on a read-only connection restricted to an allowlisted schema with statement timeouts.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: litellm.completion(...)
+        exact: true
+      - pattern: litellm.acompletion(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generate_content(...)
+        exact: true
+      - pattern: $CLIENT.models.generate_content(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, CrewAI, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.ainvoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.arun(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.chat(...)
+              - pattern: $X.kickoff(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R["choices"][0]["message"]["content"]
+      - pattern: $R["message"]["content"]
+    pattern-sanitizers:
+      - pattern: int(...)
+      - pattern: float(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $CURSOR.execute($QUERY, ...)
+              - pattern: $CURSOR.executemany($QUERY, ...)
+              - pattern: $CURSOR.executescript($QUERY, ...)
+              - pattern: $CURSOR.mogrify($QUERY, ...)
+              - pattern: $ENGINE.exec_driver_sql($QUERY, ...)
+              - pattern: sqlalchemy.text($QUERY)
+              - pattern: text($QUERY)
+              - pattern: pd.read_sql($QUERY, ...)
+              - pattern: pandas.read_sql($QUERY, ...)
+              - pattern: pd.read_sql_query($QUERY, ...)
+              - pattern: $DB.raw($QUERY, ...)
+              - pattern: $DB.sql($QUERY, ...)
+              - pattern: duckdb.sql($QUERY, ...)
+              - pattern: $CONN.sql($QUERY, ...)
+          - focus-metavariable: $QUERY
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [python, sql, sqlalchemy, langchain, openai, anthropic, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/89.html
+        - https://python.langchain.com/docs/security/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

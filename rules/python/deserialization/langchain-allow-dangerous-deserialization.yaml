@@ -1,0 +1,29 @@
+rules:
+  - id: langchain-allow-dangerous-deserialization
+    languages: [python]
+    severity: WARNING
+    message: >-
+      'allow_dangerous_deserialization=True' loads a pickle-based artefact (FAISS or other vector stores, saved chains, prompts) and pickle can execute arbitrary code when the file is opened. Only pass this flag for files your own pipeline produced and whose integrity you verify (checksum or signature) before loading. Never load vector stores, indexes or chains downloaded from the internet or uploaded by users with this flag.
+    patterns:
+      - pattern-either:
+          - pattern: $CALL(..., allow_dangerous_deserialization=True, ...)
+          - pattern: $OBJ.$CALL(..., allow_dangerous_deserialization=True, ...)
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "LLM03:2025 Supply Chain"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, langchain, langchain-community, langchain-experimental, llm, agent]
+      references:
+        - https://python.langchain.com/docs/security/
+        - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
+        - https://cwe.mitre.org/data/definitions/502.html
+        - https://python.langchain.com/docs/integrations/vectorstores/faiss/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

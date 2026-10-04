@@ -1,0 +1,115 @@
+rules:
+  - id: user-input-in-system-prompt
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Untrusted input (HTTP request data, CLI arguments, stdin or a chat message) is interpolated
+      into the system prompt. The system prompt carries the model's instructions and trust
+      boundary; letting users write into it is a direct prompt injection path that can override
+      guardrails, leak the prompt itself or redirect tool use. Keep the system prompt static and
+      pass user content only in user-role messages, or in clearly delimited template variables
+      that the model is told to treat as data. If dynamic context is needed, allowlist or
+      escape it and never let it contain instructions.
+    mode: taint
+    pattern-sources:
+      - pattern: input(...)
+      - pattern: sys.argv
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.data
+      - pattern: request.get_json(...)
+      - pattern: request.get_data(...)
+      - pattern: request.headers
+      - pattern: request.cookies
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.body()
+      - pattern: await $REQ.form()
+      - pattern: await $WS.receive_text()
+      - pattern: await $WS.receive_json()
+      - pattern: $UPDATE.message.text
+      - pattern: st.text_input(...)
+      - pattern: st.chat_input(...)
+      - pattern: st.text_area(...)
+      # FastAPI, Flask and Django route handlers: every parameter is user controlled.
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$METHOD(...)
+                  def $HANDLER(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$METHOD(...)
+                  async def $HANDLER(..., $PARAM, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|post|put|patch|delete|route|api_route|websocket|message_handler)$
+          - focus-metavariable: $PARAM
+      # Chat and agent frameworks that hand the user turn to a handler.
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$BOT.on_message(...)
+                  async def $HANDLER(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$BOT.event
+                  async def on_message(..., $PARAM, ...):
+                    ...
+          - focus-metavariable: $PARAM
+    pattern-sanitizers:
+      - pattern: int(...)
+      - pattern: float(...)
+      - pattern: bool(...)
+      - pattern: len(...)
+      - pattern: $X.isoformat(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: '{"role": "system", "content": $PROMPT}'
+              - pattern: '{"role": "system", "content": $PROMPT, ...}'
+              - pattern: '{"role": "developer", "content": $PROMPT}'
+              - pattern: '{"role": "developer", "content": $PROMPT, ...}'
+              - pattern: '{"content": $PROMPT, "role": "system"}'
+              - pattern: $CLIENT.messages.create(..., system=$PROMPT, ...)
+              - pattern: $CLIENT.messages.stream(..., system=$PROMPT, ...)
+              - pattern: $CLIENT.responses.create(..., instructions=$PROMPT, ...)
+              - pattern: SystemMessage(content=$PROMPT, ...)
+              - pattern: SystemMessage($PROMPT, ...)
+              - pattern: SystemMessagePromptTemplate.from_template($PROMPT, ...)
+              - pattern: '("system", $PROMPT)'
+              - pattern: '["system", $PROMPT]'
+              - pattern: ChatPromptTemplate.from_template($PROMPT, ...)
+              - pattern: PromptTemplate.from_template($PROMPT, ...)
+              - pattern: PromptTemplate(..., template=$PROMPT, ...)
+              - pattern: Agent(..., instructions=$PROMPT, ...)
+              - pattern: Agent(..., system_prompt=$PROMPT, ...)
+              - pattern: Agent(..., backstory=$PROMPT, ...)
+              - pattern: AssistantAgent(..., system_message=$PROMPT, ...)
+              - pattern: $X(..., system_prompt=$PROMPT, ...)
+              - pattern: $X(..., system_instruction=$PROMPT, ...)
+              - pattern: $X(..., system_message=$PROMPT, ...)
+              - pattern: $X.with_system_prompt($PROMPT)
+          - focus-metavariable: $PROMPT
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-1427: Improper Neutralization of Input Used for LLM Prompting"
+        - "CWE-74: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')"
+      owasp:
+        - "LLM01:2025 Prompt Injection"
+        - "LLM07:2025 System Prompt Leakage"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [python, openai, anthropic, langchain, fastapi, flask, streamlit, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm012025-prompt-injection/
+        - https://cwe.mitre.org/data/definitions/1427.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html
+      hisar:
+        pack: agentic-semgrep-rules
+        family: prompt-injection

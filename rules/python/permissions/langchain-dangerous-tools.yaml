@@ -1,0 +1,48 @@
+rules:
+  - id: langchain-dangerous-tools
+    languages: [python]
+    severity: WARNING
+    message: >-
+      '$TOOL' gives the model an unrestricted shell or Python interpreter inside this process.
+      Any prompt injection in a document, web page or tool result becomes arbitrary code execution
+      with this process's credentials, network access and filesystem. Prefer narrow, typed tools
+      that do one thing with validated arguments. If code execution is a product requirement, run it
+      in an isolated sandbox (separate container or microVM, no secrets, no network, time and memory
+      limits) and require human approval for anything that leaves the sandbox.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $TOOL(...)
+                  - pattern: $MOD.$TOOL(...)
+              - metavariable-regex:
+                  metavariable: $TOOL
+                  regex: ^(ShellTool|PythonREPLTool|PythonAstREPLTool|PythonREPL|BashProcess)$
+          - patterns:
+              - pattern-either:
+                  - pattern: load_tools([..., "$TOOL", ...], ...)
+                  - pattern: $MOD.load_tools([..., "$TOOL", ...], ...)
+              - metavariable-regex:
+                  metavariable: $TOOL
+                  regex: ^(terminal|python_repl|shell)$
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-250: Execution with Unnecessary Privileges"
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+        - "LLM05:2025 Improper Output Handling"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, langchain, langchain-experimental, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://python.langchain.com/docs/security/
+        - https://python.langchain.com/docs/integrations/tools/python/
+        - https://python.langchain.com/docs/integrations/tools/bash/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

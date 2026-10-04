@@ -1,0 +1,104 @@
+rules:
+  - id: llm-output-to-child-process
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Text returned by a language model is passed to child_process ('$SINK') as a command, or as
+      an argument with shell: true. A prompt injection in any page, document or tool result the
+      model has read becomes OS command injection with this process's privileges. Do not let the
+      model compose commands. Expose fixed executables as tools, pass model-chosen values as
+      separate array arguments to execFile or spawn without shell: true, validate them against an
+      allowlist, and run with least privilege and a timeout.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: generateText(...)
+        exact: true
+      - pattern: streamText(...)
+        exact: true
+      - pattern: generateObject(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generateContent(...)
+        exact: true
+      - pattern: $CLIENT.models.generateContent(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.stream(...)
+              - pattern: $X.batch(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R.response.text()
+    pattern-sanitizers:
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+      - pattern: shellQuote.quote(...)
+      - pattern: shellEscape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec($CMD, ...)
+              - pattern: execSync($CMD, ...)
+              - pattern: spawn($CMD, ...)
+              - pattern: spawnSync($CMD, ...)
+              - pattern: execFile($CMD, ...)
+              - pattern: execFileSync($CMD, ...)
+              - pattern: $CP.exec($CMD, ...)
+              - pattern: $CP.execSync($CMD, ...)
+              - pattern: $CP.spawn($CMD, ...)
+              - pattern: $CP.spawnSync($CMD, ...)
+              - pattern: $CP.execFile($CMD, ...)
+              - pattern: $CP.execFileSync($CMD, ...)
+              - pattern: execa.command($CMD, ...)
+              - pattern: execaCommand($CMD, ...)
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: 'spawn($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: 'spawnSync($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: 'execFile($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: 'execFileSync($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: '$CP.spawn($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: '$CP.spawnSync($PROG, $ARGS, {..., shell: true, ...})'
+              - pattern: '$CP.execFile($PROG, $ARGS, {..., shell: true, ...})'
+          - focus-metavariable: $ARGS
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node, child_process, openai, anthropic, langchain, vercel-ai, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/78.html
+        - https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

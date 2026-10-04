@@ -1,0 +1,37 @@
+rules:
+  - id: torch-load-without-weights-only
+    languages: [python]
+    severity: WARNING
+    message: >-
+      torch.load deserialises with pickle, and a crafted checkpoint executes arbitrary code when
+      loaded. Model files pulled from hubs, shared drives, user uploads or an agent's own
+      downloads are untrusted input. Pass weights_only=True (the default only since PyTorch 2.6;
+      set it explicitly to be safe on older versions), prefer the safetensors format, and verify
+      the file's checksum or signature before loading it. Never set weights_only=False for a file
+      you did not produce yourself.
+    patterns:
+      - pattern-either:
+          - pattern: torch.load(...)
+          - pattern: torch.jit.load(...)
+      - pattern-not: torch.load(..., weights_only=True, ...)
+      - pattern-not: torch.jit.load(..., weights_only=True, ...)
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "LLM03:2025 Supply Chain"
+        - "LLM04:2025 Data and Model Poisoning"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, pytorch, huggingface, ml, llm]
+      references:
+        - https://cwe.mitre.org/data/definitions/502.html
+        - https://pytorch.org/docs/stable/generated/torch.load.html
+        - https://huggingface.co/docs/hub/security-pickle
+        - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: model-supply-chain

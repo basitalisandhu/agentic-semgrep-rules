@@ -1,0 +1,101 @@
+rules:
+  - id: llm-output-to-subprocess
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Text returned by a language model is passed to subprocess with shell=True (or as the program
+      to run). A prompt injection becomes OS command injection with the privileges of this process.
+      Do not let the model compose shell commands. Expose a small set of fixed commands as tools,
+      pass model-chosen values as separate list arguments without shell=True, validate them against
+      an allowlist, and run with least privilege and a timeout.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: litellm.completion(...)
+        exact: true
+      - pattern: litellm.acompletion(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generate_content(...)
+        exact: true
+      - pattern: $CLIENT.models.generate_content(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, CrewAI, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.ainvoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.arun(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.chat(...)
+              - pattern: $X.kickoff(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R["choices"][0]["message"]["content"]
+      - pattern: $R["message"]["content"]
+    pattern-sanitizers:
+      - pattern: shlex.quote(...)
+      - pattern: int(...)
+      - pattern: float(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: subprocess.$FUNC($CMD, ..., shell=True, ...)
+              - pattern: subprocess.$FUNC($CMD, ..., shell=$SHELL, ...)
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: ^(run|call|check_call|check_output|Popen)$
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: subprocess.getoutput($CMD, ...)
+              - pattern: subprocess.getstatusoutput($CMD, ...)
+          - focus-metavariable: $CMD
+      - patterns:
+          # A tainted string (not a list) as the whole command, even without shell=True, still lets
+          # the model pick the executable.
+          - pattern: subprocess.$FUNC($CMD, ...)
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: ^(run|call|check_call|check_output|Popen)$
+          - metavariable-regex:
+              metavariable: $CMD
+              regex: (?s)^[^\[(].*$
+          - focus-metavariable: $CMD
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [python, subprocess, openai, anthropic, langchain, litellm, ollama, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://cwe.mitre.org/data/definitions/78.html
+        - https://docs.python.org/3/library/subprocess.html#security-considerations
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

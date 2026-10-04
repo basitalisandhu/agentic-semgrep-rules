@@ -1,0 +1,112 @@
+name: "Agentic Semgrep Rules"
+description: "Scan LLM-agent code (Python, TypeScript, JavaScript) for insecure patterns with the agentic-semgrep-rules pack and upload SARIF to GitHub code scanning."
+author: "Muhammad Basit Ali (@basitalisandhu)"
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  config:
+    description: "Rule pack to run. A path inside this action (default: the bundled rules directory), a path in the caller's repository, a URL, or a Semgrep registry reference."
+    required: false
+    default: "rules"
+  paths:
+    description: "Space-separated paths to scan, relative to the caller's workspace."
+    required: false
+    default: "."
+  severity:
+    description: "Minimum severity that fails the step: INFO, WARNING or ERROR. Findings below this level are still written to the SARIF file."
+    required: false
+    default: "ERROR"
+  upload-sarif:
+    description: "Upload results.sarif to GitHub code scanning (requires permissions: security-events: write)."
+    required: false
+    default: "true"
+  sarif-file:
+    description: "Where to write the SARIF report."
+    required: false
+    default: "results.sarif"
+  semgrep-version:
+    description: "Semgrep version to install with pip."
+    required: false
+    default: "1.179.0"
+  extra-args:
+    description: "Extra arguments passed to semgrep (for example --exclude tests)."
+    required: false
+    default: ""
+
+outputs:
+  sarif-file:
+    description: "Path of the SARIF report that was written."
+    value: ${{ steps.scan.outputs.sarif-file }}
+  finding-count:
+    description: "Number of findings at or above the severity threshold."
+    value: ${{ steps.scan.outputs.finding-count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install Semgrep
+      shell: bash
+      run: python -m pip install --quiet "semgrep==${{ inputs.semgrep-version }}"
+
+    - name: Resolve rule pack
+      id: config
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        CONFIG: ${{ inputs.config }}
+      run: |
+        if [ -e "$ACTION_PATH/$CONFIG" ]; then
+          echo "config=$ACTION_PATH/$CONFIG" >> "$GITHUB_OUTPUT"
+        else
+          echo "config=$CONFIG" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Run Semgrep
+      id: scan
+      shell: bash
+      env:
+        SEMGREP_SEND_METRICS: "off"
+        CONFIG: ${{ steps.config.outputs.config }}
+        PATHS: ${{ inputs.paths }}
+        SEVERITY: ${{ inputs.severity }}
+        SARIF_FILE: ${{ inputs.sarif-file }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+      run: |
+        set -o pipefail
+        # Full report (all severities) for code scanning.
+        semgrep --config "$CONFIG" --metrics=off --disable-version-check \
+          --sarif --output "$SARIF_FILE" $EXTRA_ARGS $PATHS || true
+        # Gate on the severity threshold.
+        case "$SEVERITY" in
+          ERROR)   SEV_ARGS="--severity ERROR" ;;
+          WARNING) SEV_ARGS="--severity ERROR --severity WARNING" ;;
+          *)       SEV_ARGS="" ;;
+        esac
+        semgrep --config "$CONFIG" --metrics=off --disable-version-check \
+          --json --output gate.json $SEV_ARGS $EXTRA_ARGS $PATHS || true
+        COUNT=$(python3 -c "import json; print(len(json.load(open('gate.json'))['results']))")
+        echo "finding-count=$COUNT" >> "$GITHUB_OUTPUT"
+        echo "sarif-file=$SARIF_FILE" >> "$GITHUB_OUTPUT"
+        echo "agentic-semgrep-rules: $COUNT finding(s) at or above $SEVERITY"
+        rm -f gate.json
+
+    - name: Upload SARIF to code scanning
+      if: ${{ inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: agentic-semgrep-rules
+
+    - name: Fail on findings above threshold
+      if: ${{ steps.scan.outputs.finding-count != '0' }}
+      shell: bash
+      run: |
+        echo "::error::agentic-semgrep-rules found ${{ steps.scan.outputs.finding-count }} finding(s) at or above ${{ inputs.severity }}. See the SARIF report or the Security tab."
+        exit 1

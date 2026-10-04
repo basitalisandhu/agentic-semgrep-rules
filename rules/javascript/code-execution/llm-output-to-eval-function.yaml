@@ -1,0 +1,92 @@
+rules:
+  - id: llm-output-to-eval-function
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Text returned by a language model flows into '$SINK', which compiles and runs it as
+      JavaScript. A prompt injection in any page, document or tool result the model has read becomes
+      arbitrary code execution in this process (the vm module is not a security boundary). Do not
+      execute model output. If generated code must run, use an isolated sandbox (isolated-vm, a
+      WebAssembly runtime, or a separate container with no secrets, no network and a timeout) and
+      treat its result as untrusted data.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: generateText(...)
+        exact: true
+      - pattern: streamText(...)
+        exact: true
+      - pattern: generateObject(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generateContent(...)
+        exact: true
+      - pattern: $CLIENT.models.generateContent(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.stream(...)
+              - pattern: $X.batch(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R.response.text()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval($CODE)
+              - pattern: new Function(..., $CODE)
+              - pattern: Function(..., $CODE)
+              - pattern: vm.runInContext($CODE, ...)
+              - pattern: vm.runInNewContext($CODE, ...)
+              - pattern: vm.runInThisContext($CODE, ...)
+              - pattern: new vm.Script($CODE, ...)
+              - pattern: vm.compileFunction($CODE, ...)
+              - pattern: runInContext($CODE, ...)
+              - pattern: runInNewContext($CODE, ...)
+              - pattern: runInThisContext($CODE, ...)
+              - pattern: new Script($CODE, ...)
+              - pattern: $ISOLATE.compileScript($CODE, ...)
+              - pattern: $CTX.eval($CODE, ...)
+              - pattern: setTimeout($CODE, ...)
+              - pattern: setInterval($CODE, ...)
+          - focus-metavariable: $CODE
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node, vm, openai, anthropic, langchain, vercel-ai, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/95.html
+        - https://nodejs.org/api/vm.html#vm-executing-javascript
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

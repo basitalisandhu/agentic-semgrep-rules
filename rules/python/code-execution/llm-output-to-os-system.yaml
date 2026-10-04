@@ -1,0 +1,90 @@
+rules:
+  - id: llm-output-to-os-system
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Text returned by a language model is passed to '$SINK', which hands it to the system shell.
+      A prompt injection becomes OS command injection with the privileges of this process.
+      Replace os.system, os.popen and os.exec*/os.spawn* with subprocess.run([...]) using a fixed
+      executable and list arguments, validate every model-chosen value against an allowlist, and run
+      with least privilege and a timeout.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: litellm.completion(...)
+        exact: true
+      - pattern: litellm.acompletion(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generate_content(...)
+        exact: true
+      - pattern: $CLIENT.models.generate_content(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, CrewAI, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.ainvoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.arun(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.chat(...)
+              - pattern: $X.kickoff(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R["choices"][0]["message"]["content"]
+      - pattern: $R["message"]["content"]
+    pattern-sanitizers:
+      - pattern: shlex.quote(...)
+      - pattern: int(...)
+      - pattern: float(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($CMD)
+              - pattern: os.popen($CMD, ...)
+              - pattern: os.execl($CMD, ...)
+              - pattern: os.execlp($CMD, ...)
+              - pattern: os.execv($CMD, ...)
+              - pattern: os.execvp($CMD, ...)
+              - pattern: os.execve($CMD, ...)
+              - pattern: os.spawnl($MODE, $CMD, ...)
+              - pattern: os.spawnv($MODE, $CMD, ...)
+              - pattern: os.spawnvp($MODE, $CMD, ...)
+              - pattern: commands.getoutput($CMD)
+          - focus-metavariable: $CMD
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [python, openai, anthropic, langchain, litellm, ollama, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/78.html
+        - https://docs.python.org/3/library/os.html#os.system
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

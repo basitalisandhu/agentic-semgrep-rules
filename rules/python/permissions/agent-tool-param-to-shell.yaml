@@ -1,0 +1,148 @@
+rules:
+  - id: agent-tool-param-to-shell
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Tool parameter '$PARAM' is filled in by the model and reaches '$SINK' as a shell command or
+      executable. This is an "execute anything" tool: a prompt injection anywhere in the agent's
+      context becomes OS command injection on the host running the tool. Replace the free-form
+      command with a fixed executable and typed arguments, validate each argument against an
+      allowlist, never use shell=True, run with least privilege and a timeout, and require human
+      approval for anything with side effects.
+    mode: taint
+    pattern-sources:
+      # Parameters of functions registered as agent or MCP tools. The model fills these in, so they
+      # carry whatever a prompt injection wants them to carry.
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$MCP.tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$AGENT.tool_plain
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$AGENT.tool_plain
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @kernel_function(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$SERVER.call_tool()
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+          - focus-metavariable: $PARAM
+          - pattern-not: self
+          - pattern-not: ctx
+          - pattern-not: context
+    pattern-sanitizers:
+      - pattern: shlex.quote(...)
+      - pattern: int(...)
+      - pattern: float(...)
+      - patterns:
+          - pattern-inside: |
+              if $P not in $ALLOWED:
+                ...
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if $P in $ALLOWED:
+                ...
+          - pattern: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: subprocess.$FUNC($CMD, ..., shell=True, ...)
+              - pattern: subprocess.$FUNC($CMD, ..., shell=$SHELL, ...)
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: ^(run|call|check_call|check_output|Popen)$
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern: subprocess.$FUNC($CMD, ...)
+          - metavariable-regex:
+              metavariable: $FUNC
+              regex: ^(run|call|check_call|check_output|Popen)$
+          - metavariable-regex:
+              metavariable: $CMD
+              regex: (?s)^[^\[(].*$
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: subprocess.getoutput($CMD, ...)
+              - pattern: subprocess.getstatusoutput($CMD, ...)
+              - pattern: os.system($CMD)
+              - pattern: os.popen($CMD, ...)
+              - pattern: os.execvp($CMD, ...)
+              - pattern: os.execv($CMD, ...)
+              - pattern: asyncio.create_subprocess_shell($CMD, ...)
+              - pattern: await asyncio.create_subprocess_shell($CMD, ...)
+          - focus-metavariable: $CMD
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+        - "LLM05:2025 Improper Output Handling"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [python, mcp, fastmcp, langchain, openai-agents, pydantic-ai, semantic-kernel, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://cwe.mitre.org/data/definitions/78.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

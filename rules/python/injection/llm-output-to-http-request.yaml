@@ -1,0 +1,106 @@
+rules:
+  - id: llm-output-to-http-request
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A URL chosen by a language model is fetched by '$SINK'. A prompt injection can point the
+      agent at internal services (cloud metadata endpoints, admin panels, localhost ports) or at an
+      attacker's server to exfiltrate data: server-side request forgery through a tool URL.
+      Validate the URL before fetching: parse it, allow only http/https, resolve the host and reject
+      private, loopback and link-local ranges, apply a host allowlist where possible, disable
+      redirects or re-validate on each hop, and set timeouts and size limits.
+    mode: taint
+    pattern-sources:
+      # Vendor SDK calls that return a model response object.
+      - pattern: $CLIENT.chat.completions.create(...)
+        exact: true
+      - pattern: $CLIENT.responses.create(...)
+        exact: true
+      - pattern: $CLIENT.messages.create(...)
+        exact: true
+      - pattern: litellm.completion(...)
+        exact: true
+      - pattern: litellm.acompletion(...)
+        exact: true
+      - pattern: ollama.chat(...)
+        exact: true
+      - pattern: ollama.generate(...)
+        exact: true
+      - pattern: $MODEL.generate_content(...)
+        exact: true
+      - pattern: $CLIENT.models.generate_content(...)
+        exact: true
+      # Framework calls (LangChain, LangGraph, CrewAI, agents) on an object whose name says it is a model, chain or agent.
+      - patterns:
+          - pattern-either:
+              - pattern: $X.invoke(...)
+              - pattern: $X.ainvoke(...)
+              - pattern: $X.run(...)
+              - pattern: $X.arun(...)
+              - pattern: $X.predict(...)
+              - pattern: $X.chat(...)
+              - pattern: $X.kickoff(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: (?i)^(.*(agent|chain|llm|model|graph|runnable|executor|crew|pipeline|chat|assistant|bot|ollama|completion)\w*|app|workflow)$
+        exact: true
+      # Response shapes that are unique to model SDKs, for when the response arrives through a parameter.
+      - pattern: $R.choices[0].message.content
+      - pattern: $R.choices[0].text
+      - pattern: $R.output_text
+      - pattern: $R.content[0].text
+      - pattern: $R["choices"][0]["message"]["content"]
+      - pattern: $R["message"]["content"]
+    pattern-sanitizers:
+      - pattern: urllib.parse.quote(...)
+      - pattern: urllib.parse.quote_plus(...)
+      - pattern: quote(...)
+      - pattern: quote_plus(...)
+      - pattern: validate_url(...)
+      - pattern: is_safe_url(...)
+      - pattern: $X.validate_url(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: requests.$METHOD($URL, ...)
+              - pattern: requests.$METHOD(url=$URL, ...)
+              - pattern: httpx.$METHOD($URL, ...)
+              - pattern: httpx.$METHOD(url=$URL, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|post|put|patch|delete|head|options|request|stream)$
+          - focus-metavariable: $URL
+      - patterns:
+          - pattern-either:
+              - pattern: $SESSION.get($URL, ...)
+              - pattern: $SESSION.post($URL, ...)
+              - pattern: $SESSION.put($URL, ...)
+              - pattern: $SESSION.delete($URL, ...)
+              - pattern: $SESSION.request($VERB, $URL, ...)
+              - pattern: urllib.request.urlopen($URL, ...)
+              - pattern: urlopen($URL, ...)
+              - pattern: urllib.request.Request($URL, ...)
+              - pattern: aiohttp.ClientSession().get($URL, ...)
+              - pattern: WebBaseLoader($URL, ...)
+              - pattern: AsyncHtmlLoader($URL, ...)
+              - pattern: RecursiveUrlLoader($URL, ...)
+          - focus-metavariable: $URL
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "LLM05:2025 Improper Output Handling"
+        - "LLM06:2025 Excessive Agency"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, requests, httpx, langchain, openai, anthropic, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
+        - https://cwe.mitre.org/data/definitions/918.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+      hisar:
+        pack: agentic-semgrep-rules
+        family: llm-output-to-sink

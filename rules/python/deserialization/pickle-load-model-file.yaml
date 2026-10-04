@@ -1,0 +1,50 @@
+rules:
+  - id: pickle-load-model-file
+    languages: [python]
+    severity: WARNING
+    message: >-
+      '$LOADER' unpickles data, and unpickling executes arbitrary code embedded in the file.
+      Model artefacts, embeddings caches, tokenizers and agent memory files that come from a hub,
+      a bucket, a user upload or an earlier agent run are untrusted. Use a data-only format
+      (safetensors, ONNX, JSON, numpy .npy with allow_pickle=False), verify checksums or
+      signatures before loading, and if pickle is unavoidable load it in an isolated process with
+      a restricted Unpickler.find_class allowlist.
+    patterns:
+      - pattern-either:
+          - pattern: pickle.load(...)
+          - pattern: pickle.loads(...)
+          - pattern: cPickle.load(...)
+          - pattern: cPickle.loads(...)
+          - pattern: dill.load(...)
+          - pattern: dill.loads(...)
+          - pattern: cloudpickle.load(...)
+          - pattern: cloudpickle.loads(...)
+          - pattern: joblib.load(...)
+          - pattern: numpy.load(..., allow_pickle=True, ...)
+          - pattern: np.load(..., allow_pickle=True, ...)
+          - pattern: shelve.open(...)
+          - pattern: pd.read_pickle(...)
+          - pattern: pandas.read_pickle(...)
+          - pattern: $OBJ.from_pretrained(..., use_safetensors=False, ...)
+          - pattern: keras.models.load_model(..., safe_mode=False, ...)
+          - pattern: $KERAS.load_model(..., safe_mode=False, ...)
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "LLM03:2025 Supply Chain"
+        - "LLM04:2025 Data and Model Poisoning"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, pickle, joblib, numpy, pandas, keras, huggingface, ml, llm]
+      references:
+        - https://cwe.mitre.org/data/definitions/502.html
+        - https://docs.python.org/3/library/pickle.html
+        - https://huggingface.co/docs/hub/security-pickle
+        - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
+      hisar:
+        pack: agentic-semgrep-rules
+        family: model-supply-chain

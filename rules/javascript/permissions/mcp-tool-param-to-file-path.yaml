@@ -1,0 +1,116 @@
+rules:
+  - id: mcp-tool-param-to-file-path
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Tool argument '$PARAM' is filled in by the model and is used as a file path by '$SINK'
+      without a containment check. A prompt injection can make the agent read or overwrite any
+      file this process can reach (.env files, SSH keys, other users' data). Resolve the path
+      against a fixed base directory with path.resolve, verify the result still starts with that
+      base (plus path.sep), reject symlinks where appropriate, and restrict names or extensions with
+      an allowlist in the tool schema.
+    mode: taint
+    pattern-sources:
+      # Arguments of MCP tool handlers (official TypeScript SDK) and LangChain / AI SDK tools.
+      # The model fills these in, so they carry whatever a prompt injection wants them to carry.
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $SERVER.tool($NAME, ..., async ({..., $PARAM, ...}) => {...})
+              - pattern-inside: $SERVER.tool($NAME, ..., ({..., $PARAM, ...}) => {...})
+              - pattern-inside: '$SERVER.tool($NAME, ..., async ({..., $KEY: $PARAM, ...}) => {...})'
+              - pattern-inside: '$SERVER.registerTool($NAME, ..., async ({..., $KEY: $PARAM, ...}) => {...})'
+              - pattern-inside: 'tool({..., execute: async ({..., $KEY: $PARAM, ...}) => {...}, ...})'
+              - pattern-inside: $SERVER.registerTool($NAME, ..., async ({..., $PARAM, ...}) => {...})
+              - pattern-inside: $SERVER.registerTool($NAME, ..., ({..., $PARAM, ...}) => {...})
+              - pattern-inside: tool(async ({..., $PARAM, ...}) => {...}, ...)
+              - pattern-inside: tool(({..., $PARAM, ...}) => {...}, ...)
+              - pattern-inside: "tool({..., execute: async ({..., $PARAM, ...}) => {...}, ...})"
+              - pattern-inside: "new DynamicStructuredTool({..., func: async ({..., $PARAM, ...}) => {...}, ...})"
+          - pattern: $PARAM
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $SERVER.tool($NAME, ..., async ($ARGS) => {...})
+              - pattern-inside: $SERVER.tool($NAME, ..., async ($ARGS, $EXTRA) => {...})
+              - pattern-inside: $SERVER.registerTool($NAME, ..., async ($ARGS) => {...})
+              - pattern-inside: $SERVER.registerTool($NAME, ..., async ($ARGS, $EXTRA) => {...})
+              - pattern-inside: $SERVER.setRequestHandler(CallToolRequestSchema, async ($ARGS) => {...})
+          - pattern-either:
+              - pattern: $ARGS.$FIELD
+              - pattern: $ARGS.params.arguments
+              - pattern: $ARGS.params.arguments.$FIELD
+    pattern-sanitizers:
+      - pattern: path.basename(...)
+      - pattern: sanitizeFilename(...)
+      - pattern: sanitize(...)
+      - pattern: safeJoin(...)
+      - pattern: resolveInside(...)
+      - pattern: parseInt(...)
+      - patterns:
+          - pattern-inside: |
+              if (!$P.startsWith(...)) { ... }
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if ($P.startsWith(...)) { ... }
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if (!$ALLOWED.includes($P)) { ... }
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if (!$ALLOWED.has($P)) { ... }
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if ($P.includes("..")) { ... }
+              ...
+          - pattern: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fs.$METHOD($PATH, ...)
+              - pattern: fs.promises.$METHOD($PATH, ...)
+              - pattern: fsp.$METHOD($PATH, ...)
+              - pattern: fsPromises.$METHOD($PATH, ...)
+              - pattern: fse.$METHOD($PATH, ...)
+              - pattern: $FS.$METHOD($PATH, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(readFile|readFileSync|writeFile|writeFileSync|appendFile|appendFileSync|unlink|unlinkSync|rm|rmSync|rmdir|rmdirSync|readdir|readdirSync|mkdir|mkdirSync|createReadStream|createWriteStream|open|openSync|readJson|readJsonSync|writeJson|writeJsonSync|outputFile|outputFileSync|remove|removeSync|copy|copySync|copyFile|copyFileSync|rename|renameSync|stat|statSync|access|accessSync|readTextFile|writeTextFile)$
+          - focus-metavariable: $PATH
+      - patterns:
+          - pattern-either:
+              - pattern: Bun.file($PATH, ...)
+              - pattern: Bun.write($PATH, ...)
+              - pattern: Deno.readTextFile($PATH, ...)
+              - pattern: Deno.writeTextFile($PATH, ...)
+              - pattern: Deno.readFile($PATH, ...)
+              - pattern: Deno.remove($PATH, ...)
+              - pattern: new TextLoader($PATH, ...)
+              - pattern: new PDFLoader($PATH, ...)
+              - pattern: new DirectoryLoader($PATH, ...)
+          - focus-metavariable: $PATH
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+        - "LLM05:2025 Improper Output Handling"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node, fs, mcp, modelcontextprotocol, langchain, vercel-ai, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://cwe.mitre.org/data/definitions/22.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
+        - https://nodejs.org/api/path.html#pathresolvepaths
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

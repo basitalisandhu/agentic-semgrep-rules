@@ -1,0 +1,187 @@
+rules:
+  - id: agent-tool-param-to-file-path
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Tool parameter '$PARAM' is filled in by the model and is used as a file path by '$SINK'
+      without a containment check. A prompt injection can make the agent read or overwrite any file
+      this process can reach (credentials, keys, other users' data). Resolve the path against a
+      fixed base directory, verify the resolved path is still inside it (Path.resolve() plus
+      is_relative_to), reject symlinks where appropriate, and restrict names or extensions with an
+      allowlist.
+    mode: taint
+    pattern-sources:
+      # Parameters of functions registered as agent or MCP tools. The model fills these in, so they
+      # carry whatever a prompt injection wants them to carry.
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$MCP.tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$MCP.tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool(...)
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @function_tool
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$AGENT.tool_plain
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$AGENT.tool_plain
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @kernel_function(...)
+                  def $FUNC(..., $PARAM, ...):
+                    ...
+              - pattern-inside: |
+                  @$SERVER.call_tool()
+                  async def $FUNC(..., $PARAM, ...):
+                    ...
+          - focus-metavariable: $PARAM
+          - pattern-not: self
+          - pattern-not: ctx
+          - pattern-not: context
+    pattern-sanitizers:
+      - pattern: os.path.basename(...)
+      - pattern: secure_filename(...)
+      - pattern: werkzeug.utils.secure_filename(...)
+      - pattern: safe_join(...)
+      - pattern: int(...)
+      - patterns:
+          - pattern-inside: |
+              if not $P.is_relative_to(...):
+                ...
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if not $P.startswith(...):
+                ...
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if not str($P).startswith(...):
+                ...
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if $P.is_relative_to(...):
+                ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if $P not in $ALLOWED:
+                ...
+              ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if $P in $ALLOWED:
+                ...
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              if ".." in $P:
+                ...
+              ...
+          - pattern: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: open($PATH, ...)
+              - pattern: io.open($PATH, ...)
+              - pattern: os.remove($PATH)
+              - pattern: os.unlink($PATH)
+              - pattern: os.rmdir($PATH)
+              - pattern: os.makedirs($PATH, ...)
+              - pattern: os.listdir($PATH)
+              - pattern: os.rename($PATH, ...)
+              - pattern: os.rename($SRC, $PATH)
+              - pattern: shutil.rmtree($PATH, ...)
+              - pattern: shutil.copy($PATH, ...)
+              - pattern: shutil.copy($SRC, $PATH)
+              - pattern: shutil.move($PATH, ...)
+              - pattern: shutil.move($SRC, $PATH)
+              - pattern: pathlib.Path($PATH, ...)
+              - pattern: Path($PATH, ...)
+              - pattern: send_file($PATH, ...)
+              - pattern: FileResponse($PATH, ...)
+              - pattern: TextLoader($PATH, ...)
+              - pattern: PyPDFLoader($PATH, ...)
+              - pattern: aiofiles.open($PATH, ...)
+          - focus-metavariable: $PATH
+      - patterns:
+          - pattern-either:
+              - pattern: $PATH.read_text(...)
+              - pattern: $PATH.read_bytes(...)
+              - pattern: $PATH.write_text(...)
+              - pattern: $PATH.write_bytes(...)
+              - pattern: $PATH.open(...)
+              - pattern: $PATH.unlink(...)
+              - pattern: $PATH.rmdir(...)
+              - pattern: $PATH.mkdir(...)
+              - pattern: $PATH.iterdir(...)
+          - focus-metavariable: $PATH
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "LLM06:2025 Excessive Agency"
+        - "LLM05:2025 Improper Output Handling"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      technology: [python, mcp, fastmcp, langchain, openai-agents, pydantic-ai, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+        - https://cwe.mitre.org/data/definitions/22.html
+        - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
+      hisar:
+        pack: agentic-semgrep-rules
+        family: excessive-agency

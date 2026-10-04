@@ -1,0 +1,46 @@
+rules:
+  - id: yaml-unsafe-load
+    languages: [python]
+    severity: WARNING
+    message: >-
+      yaml.load without SafeLoader (or with Loader, UnsafeLoader or FullLoader) can instantiate
+      arbitrary Python objects and run code from the document. Agent configurations, prompt
+      templates, tool manifests and skill files are increasingly fetched from repositories and
+      marketplaces, so treat them as untrusted. Use yaml.safe_load (or Loader=yaml.SafeLoader),
+      validate the result against a schema, and never load YAML the model wrote or downloaded with
+      an unsafe loader.
+    patterns:
+      - pattern-either:
+          - pattern: yaml.load($DATA)
+          - pattern: yaml.load($DATA, Loader=yaml.Loader)
+          - pattern: yaml.load($DATA, Loader=yaml.UnsafeLoader)
+          - pattern: yaml.load($DATA, Loader=yaml.FullLoader)
+          - pattern: yaml.load($DATA, yaml.Loader)
+          - pattern: yaml.load($DATA, yaml.UnsafeLoader)
+          - pattern: yaml.load($DATA, yaml.FullLoader)
+          - pattern: yaml.load_all($DATA)
+          - pattern: yaml.load_all($DATA, Loader=yaml.Loader)
+          - pattern: yaml.load_all($DATA, Loader=yaml.UnsafeLoader)
+          - pattern: yaml.load_all($DATA, Loader=yaml.FullLoader)
+          - pattern: yaml.unsafe_load($DATA)
+          - pattern: yaml.unsafe_load_all($DATA)
+          - pattern: yaml.full_load($DATA)
+          - pattern: yaml.full_load_all($DATA)
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "LLM03:2025 Supply Chain"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, pyyaml, yaml, llm, agent]
+      references:
+        - https://cwe.mitre.org/data/definitions/502.html
+        - https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
+        - https://pyyaml.org/wiki/PyYAMLDocumentation
+      hisar:
+        pack: agentic-semgrep-rules
+        family: model-supply-chain

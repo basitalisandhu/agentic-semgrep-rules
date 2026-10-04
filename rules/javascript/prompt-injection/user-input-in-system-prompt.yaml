@@ -1,0 +1,98 @@
+rules:
+  - id: user-input-in-system-prompt
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Untrusted input (HTTP request data, CLI arguments, a form field or a chat message) is
+      interpolated into the system prompt. The system prompt carries the model's instructions and
+      trust boundary; letting users write into it is a direct prompt injection path that can
+      override guardrails, leak the prompt itself or redirect tool use. Keep the system prompt
+      static and pass user content only in user-role messages, or in clearly delimited template
+      variables the model is told to treat as data. If dynamic context is needed, allowlist or
+      escape it and never let it contain instructions.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.body
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.headers
+      - pattern: $REQ.cookies
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.text()
+      - pattern: await $REQ.formData()
+      - pattern: $REQ.nextUrl.searchParams
+      - pattern: new URL($REQ.url).searchParams
+      - pattern: process.argv
+      - pattern: $FORM.get(...)
+      - pattern: $SEARCHPARAMS.get(...)
+      - pattern: $INTERACTION.options.getString(...)
+      - pattern: $MSG.content
+      - pattern: $CTX.message.text
+      - pattern: await rl.question(...)
+      - pattern: prompt(...)
+      # Hono route handlers: the context object carries the request.
+      - patterns:
+          - pattern-inside: |
+              $APP.$METHOD($PATH, async ($C) => { ... })
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|post|put|patch|delete|all)$
+          - pattern-either:
+              - pattern: $C.req.query(...)
+              - pattern: $C.req.param(...)
+              - pattern: await $C.req.json()
+              - pattern: await $C.req.text()
+              - pattern: await $C.req.parseBody()
+    pattern-sanitizers:
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+      - pattern: Boolean(...)
+      - pattern: $X.length
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: '{ role: "system", content: $PROMPT }'
+              - pattern: '{ role: "system", content: $PROMPT, ... }'
+              - pattern: '{ role: "developer", content: $PROMPT }'
+              - pattern: '{ role: "developer", content: $PROMPT, ... }'
+              - pattern: '{ content: $PROMPT, role: "system" }'
+              - pattern: '$CLIENT.messages.create({..., system: $PROMPT, ...})'
+              - pattern: '$CLIENT.messages.stream({..., system: $PROMPT, ...})'
+              - pattern: '$CLIENT.responses.create({..., instructions: $PROMPT, ...})'
+              - pattern: 'generateText({..., system: $PROMPT, ...})'
+              - pattern: 'streamText({..., system: $PROMPT, ...})'
+              - pattern: 'generateObject({..., system: $PROMPT, ...})'
+              - pattern: 'streamObject({..., system: $PROMPT, ...})'
+              - pattern: new SystemMessage($PROMPT)
+              - pattern: 'new SystemMessage({ content: $PROMPT, ... })'
+              - pattern: SystemMessagePromptTemplate.fromTemplate($PROMPT)
+              - pattern: '["system", $PROMPT]'
+              - pattern: ChatPromptTemplate.fromTemplate($PROMPT)
+              - pattern: PromptTemplate.fromTemplate($PROMPT)
+              - pattern: 'new Agent({..., instructions: $PROMPT, ...})'
+              - pattern: 'new Agent({..., systemPrompt: $PROMPT, ...})'
+              - pattern: '$X({..., systemPrompt: $PROMPT, ...})'
+              - pattern: '$X({..., systemInstruction: $PROMPT, ...})'
+              - pattern: '$X({..., system_instruction: $PROMPT, ...})'
+              - pattern: '$X({..., systemMessage: $PROMPT, ...})'
+          - focus-metavariable: $PROMPT
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe:
+        - "CWE-1427: Improper Neutralization of Input Used for LLM Prompting"
+        - "CWE-74: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')"
+      owasp:
+        - "LLM01:2025 Prompt Injection"
+        - "LLM07:2025 System Prompt Leakage"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node, express, nextjs, hono, openai, anthropic, langchain, vercel-ai, llm, agent]
+      references:
+        - https://genai.owasp.org/llmrisk/llm012025-prompt-injection/
+        - https://cwe.mitre.org/data/definitions/1427.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html
+      hisar:
+        pack: agentic-semgrep-rules
+        family: prompt-injection

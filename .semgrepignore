@@ -1,0 +1,5 @@
+# Semgrep ignore list for this repository.
+# The default list excludes tests/, which would hide the fixtures from `make smoke`.
+.git/
+node_modules/
+.venv/

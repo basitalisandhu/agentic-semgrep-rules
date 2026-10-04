@@ -86,6 +86,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/89.html
         - https://www.prisma.io/docs/orm/prisma-client/using-raw-sql/raw-queries#sql-injection-prevention
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

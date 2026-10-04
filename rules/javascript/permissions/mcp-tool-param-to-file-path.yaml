@@ -111,6 +111,6 @@ rules:
         - https://cwe.mitre.org/data/definitions/22.html
         - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
         - https://nodejs.org/api/path.html#pathresolvepaths
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: excessive-agency

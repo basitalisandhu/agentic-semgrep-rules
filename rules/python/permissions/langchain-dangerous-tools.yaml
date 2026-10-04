@@ -43,6 +43,6 @@ rules:
         - https://python.langchain.com/docs/security/
         - https://python.langchain.com/docs/integrations/tools/python/
         - https://python.langchain.com/docs/integrations/tools/bash/
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: excessive-agency

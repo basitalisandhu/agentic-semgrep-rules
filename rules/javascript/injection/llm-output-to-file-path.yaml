@@ -118,6 +118,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/22.html
         - https://nodejs.org/api/path.html#pathresolvepaths
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

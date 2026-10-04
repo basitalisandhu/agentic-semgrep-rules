@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- Removed the umbrella branding; this project stands alone and links its sibling repositories directly.
+- The per-rule `metadata.masoon` block is now `metadata.pack`, with the same `pack` and `family` fields. Rule ids are unchanged. Consumers that group SARIF results on the old key need to read the new one.
 - Renamed the umbrella project from Hisar to Masoon; links, names and identifiers updated.
 
 ## [1.0.0] - 2026-10-03

@@ -145,6 +145,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/22.html
         - https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.is_relative_to
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

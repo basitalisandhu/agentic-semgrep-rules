@@ -88,6 +88,6 @@ rules:
         - https://cwe.mitre.org/data/definitions/79.html
         - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
         - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

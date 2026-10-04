@@ -33,6 +33,6 @@ rules:
         - https://huggingface.co/docs/transformers/main/en/model_doc/auto#transformers.AutoModel.from_pretrained
         - https://huggingface.co/docs/hub/security
         - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: model-supply-chain

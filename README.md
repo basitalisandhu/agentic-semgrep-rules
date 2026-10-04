@@ -2,7 +2,7 @@
 
 Semgrep rules for AI agent code: static analysis for LLM applications in Python, TypeScript and JavaScript that finds model output flowing into `exec`, shells, SQL, URLs, file paths and HTML (eval of model output, SSRF through tool URLs), user input written into system prompts, tools that let the model run anything, MCP server security checks (HTTP transports without authentication, servers bound to every interface), leaked provider keys, and unsafe model or config loading. For teams that ship LLM agents, MCP servers and tool-using assistants and want these mistakes caught in a pull request rather than found in an incident.
 
-36 rules (23 Python, 13 TypeScript/JavaScript), every one with a tested fixture, CWE and OWASP LLM Top 10 (2025) mapping, and a message that says what is wrong and how to fix it. Part of [Masoon](https://github.com/basitalisandhu/masoon) ([docs](https://basitalisandhu.github.io/masoon/)), open-source trust infrastructure for AI agents.
+36 rules (23 Python, 13 TypeScript/JavaScript), every one with a tested fixture, CWE and OWASP LLM Top 10 (2025) mapping, and a message that says what is wrong and how to fix it.
 
 ```sh
 pip install semgrep
@@ -203,7 +203,7 @@ make smoke      # scan the fixtures and report per-rule counts (add SMOKE_PATHS=
 
 ## Precision
 
-Every rule ships with positive and negative fixtures and the suite fails on any finding outside an annotated line. The pack was also run against two real agent codebases from the same project family (a TypeScript credential broker and a Python policy enforcement point, 99 files) with zero findings; see [docs/smoke-test.md](docs/smoke-test.md). If a rule is noisy on your code, open an issue with the snippet: narrowing a rule is preferred over keeping a noisy one.
+Every rule ships with positive and negative fixtures and the suite fails on any finding outside an annotated line. The pack was also run against a real Python codebase by the same author ([agent-threat-model](https://github.com/basitalisandhu/agent-threat-model), 21 files) with zero findings; see [docs/smoke-test.md](docs/smoke-test.md). If a rule is noisy on your code, open an issue with the snippet: narrowing a rule is preferred over keeping a noisy one.
 
 ## Frequently asked questions
 
@@ -217,7 +217,7 @@ Pin Semgrep and run the bundle with `--error`: `semgrep --config https://raw.git
 Sources: the OpenAI (`chat.completions.create`, `responses.create`), Anthropic (`messages.create`), LiteLLM, Ollama and Google GenAI SDK calls, the Vercel AI SDK (`generateText`, `streamText`, `generateObject`), LangChain and LangGraph `invoke`, `run`, `predict` and `stream` on chains, agents, models and graphs, and the response shapes only model SDKs produce (`.choices[0].message.content`, `.output_text`, `.content[0].text`). Tool-parameter rules recognise FastMCP and the official MCP SDKs, LangChain `@tool` and `DynamicStructuredTool`, OpenAI Agents `@function_tool`, pydantic-ai `@agent.tool_plain`, Semantic Kernel `@kernel_function` and Vercel AI `tool()`. Go and Java are on the roadmap.
 
 **How noisy are the rules on real code?**
-Precision is the first design goal. Every rule ships with positive and negative fixtures, the suite fails on any finding outside an annotated line, and the pack was run against two real agent codebases from the same project family (a TypeScript credential broker and a Python policy enforcement point, 99 files) with zero findings ([docs/smoke-test.md](docs/smoke-test.md)). If a rule fires on your code wrongly, open an issue with the snippet: narrowing a rule is preferred over keeping a noisy one.
+Precision is the first design goal. Every rule ships with positive and negative fixtures, the suite fails on any finding outside an annotated line, and the pack was run against a real Python codebase by the same author ([agent-threat-model](https://github.com/basitalisandhu/agent-threat-model), 21 files) with zero findings ([docs/smoke-test.md](docs/smoke-test.md)). If a rule fires on your code wrongly, open an issue with the snippet: narrowing a rule is preferred over keeping a noisy one.
 
 **Can I use the rules commercially and contribute my own?**
 Yes to both. The pack is MIT licensed, so it can be run in commercial CI and vendored into internal rule sets. A contribution is one rule at `rules/<language>/<category>/<rule-id>.yaml` with the required `metadata` block (`category`, `subcategory`, `cwe`, `owasp`, `confidence`, `likelihood`, `impact`, `technology`, `references`) and a fixture at `tests/<language>/<category>/` that marks true positives with `ruleid:` and negatives with `ok:`; `make test`, `make validate` and `make bundle` must pass. [docs/rule-writing.md](docs/rule-writing.md) explains the conventions and the Semgrep behaviours to watch for.
@@ -231,11 +231,10 @@ Yes to both. The pack is MIT licensed, so it can be run in commercial CI and ven
 - Autofix suggestions (`fix:`) for the flag-based rules.
 - Cross-file (interprocedural) variants when Semgrep's open-source engine supports them.
 
-## Sibling projects
+## Related projects
 
-- [masoon](https://github.com/basitalisandhu/masoon): platform overview and front door, with a [docs site](https://basitalisandhu.github.io/masoon/).
-- [Masoon Broker](https://basitalisandhu.github.io/masoon/masoon-broker.html): scoped, short-lived, per-action credentials for AI agents with human approvals, kill switch and hash-chained audit log.
-- [llm-agent-control-plane](https://github.com/basitalisandhu/llm-agent-control-plane): deterministic policy enforcement point for LLM agents (provenance and approval rules), evaluated on AgentDojo, with an 80-event incident dataset.
+More tools by the same author: https://github.com/basitalisandhu
+
 - [ai-agent-incidents](https://github.com/basitalisandhu/ai-agent-incidents): open, structured dataset of publicly documented AI agent security incidents, mapped to OWASP and MITRE ATLAS, with a [browsable site](https://basitalisandhu.github.io/ai-agent-incidents/).
 - [agent-threat-model](https://github.com/basitalisandhu/agent-threat-model): CLI that turns a YAML description of an agent system into a STRIDE + OWASP Agentic threat model, control checklist and Mermaid diagram.
 - [agent-security-skills](https://github.com/basitalisandhu/agent-security-skills): Claude Code plugin and agentskills-compatible skill pack for agent security reviews: threat modelling, config audits, policy generation, incident lookup.

@@ -24,6 +24,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
         - https://cwe.mitre.org/data/definitions/502.html
         - https://python.langchain.com/docs/integrations/vectorstores/faiss/
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: excessive-agency

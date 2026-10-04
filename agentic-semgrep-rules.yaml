@@ -112,7 +112,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/78.html
     - https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.code-execution.llm-output-to-eval-function
@@ -211,7 +211,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/95.html
     - https://nodejs.org/api/vm.html#vm-executing-javascript
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.injection.llm-output-to-fetch
@@ -326,7 +326,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/918.html
     - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.injection.llm-output-to-file-path
@@ -464,7 +464,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/22.html
     - https://nodejs.org/api/path.html#pathresolvepaths
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.injection.llm-output-to-innerhtml
@@ -565,7 +565,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/79.html
     - https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
     - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.injection.llm-output-to-sql
@@ -668,7 +668,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/89.html
     - https://www.prisma.io/docs/orm/prisma-client/using-raw-sql/raw-queries#sql-injection-prevention
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: javascript.mcp.mcp-http-transport-without-auth
@@ -755,7 +755,7 @@ rules:
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
     - https://github.com/modelcontextprotocol/typescript-sdk#running-your-server
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: mcp-exposure
 - id: javascript.permissions.mcp-tool-param-to-file-path
@@ -887,7 +887,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/22.html
     - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
     - https://nodejs.org/api/path.html#pathresolvepaths
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: javascript.permissions.mcp-tool-param-to-shell
@@ -1004,7 +1004,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/78.html
     - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
     - https://github.com/modelcontextprotocol/typescript-sdk
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: javascript.prompt-injection.user-input-in-system-prompt
@@ -1114,7 +1114,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm012025-prompt-injection/
     - https://cwe.mitre.org/data/definitions/1427.html
     - https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: prompt-injection
 - id: javascript.secrets.api-key-in-command-line-arg
@@ -1194,7 +1194,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/214.html
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://nodejs.org/api/child_process.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets
 - id: javascript.secrets.hardcoded-llm-api-key
@@ -1240,7 +1240,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://huggingface.co/docs/hub/security-tokens
     - https://docs.github.com/en/code-security/secret-scanning/introduction/supported-secret-scanning-patterns
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets
 - id: javascript.secrets.llm-api-key-logged
@@ -1320,7 +1320,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/532.html
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets
 - id: python.code-execution.llm-output-to-exec-eval
@@ -1407,7 +1407,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/95.html
     - https://python.langchain.com/docs/security/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.code-execution.llm-output-to-os-system
@@ -1501,7 +1501,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/78.html
     - https://docs.python.org/3/library/os.html#os.system
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.code-execution.llm-output-to-subprocess
@@ -1606,7 +1606,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
     - https://cwe.mitre.org/data/definitions/78.html
     - https://docs.python.org/3/library/subprocess.html#security-considerations
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.deserialization.langchain-allow-dangerous-deserialization
@@ -1645,7 +1645,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
     - https://cwe.mitre.org/data/definitions/502.html
     - https://python.langchain.com/docs/integrations/vectorstores/faiss/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.deserialization.pickle-load-model-file
@@ -1703,7 +1703,7 @@ rules:
     - https://docs.python.org/3/library/pickle.html
     - https://huggingface.co/docs/hub/security-pickle
     - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: model-supply-chain
 - id: python.deserialization.torch-load-without-weights-only
@@ -1744,7 +1744,7 @@ rules:
     - https://pytorch.org/docs/stable/generated/torch.load.html
     - https://huggingface.co/docs/hub/security-pickle
     - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: model-supply-chain
 - id: python.deserialization.transformers-trust-remote-code
@@ -1787,7 +1787,7 @@ rules:
     - https://huggingface.co/docs/transformers/main/en/model_doc/auto#transformers.AutoModel.from_pretrained
     - https://huggingface.co/docs/hub/security
     - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: model-supply-chain
 - id: python.deserialization.yaml-unsafe-load
@@ -1837,7 +1837,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/502.html
     - https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
     - https://pyyaml.org/wiki/PyYAMLDocumentation
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: model-supply-chain
 - id: python.injection.llm-output-to-file-path
@@ -1973,7 +1973,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/22.html
     - https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.is_relative_to
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.injection.llm-output-to-html
@@ -2078,7 +2078,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/79.html
     - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.injection.llm-output-to-http-request
@@ -2189,7 +2189,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/918.html
     - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.injection.llm-output-to-sql
@@ -2286,7 +2286,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
     - https://cwe.mitre.org/data/definitions/89.html
     - https://python.langchain.com/docs/security/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: llm-output-to-sink
 - id: python.mcp.fastmcp-bind-all-interfaces
@@ -2334,7 +2334,7 @@ rules:
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
     - https://github.com/modelcontextprotocol/python-sdk
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: mcp-exposure
 - id: python.mcp.fastmcp-http-transport-without-auth
@@ -2416,7 +2416,7 @@ rules:
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
     - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
     - https://gofastmcp.com/servers/auth/authentication
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: mcp-exposure
 - id: python.permissions.agent-tool-param-to-file-path
@@ -2540,7 +2540,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
     - https://cwe.mitre.org/data/definitions/22.html
     - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.permissions.agent-tool-param-to-shell
@@ -2640,7 +2640,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
     - https://cwe.mitre.org/data/definitions/78.html
     - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.permissions.langchain-allow-dangerous-code
@@ -2679,7 +2679,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
     - https://cwe.mitre.org/data/definitions/94.html
     - https://python.langchain.com/api_reference/experimental/agents/langchain_experimental.agents.agent_toolkits.pandas.base.create_pandas_dataframe_agent.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.permissions.langchain-allow-dangerous-requests
@@ -2718,7 +2718,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
     - https://cwe.mitre.org/data/definitions/918.html
     - https://python.langchain.com/docs/integrations/tools/requests/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.permissions.langchain-dangerous-tools
@@ -2771,7 +2771,7 @@ rules:
     - https://python.langchain.com/docs/security/
     - https://python.langchain.com/docs/integrations/tools/python/
     - https://python.langchain.com/docs/integrations/tools/bash/
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: excessive-agency
 - id: python.prompt-injection.user-input-in-system-prompt
@@ -2880,7 +2880,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm012025-prompt-injection/
     - https://cwe.mitre.org/data/definitions/1427.html
     - https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: prompt-injection
 - id: python.secrets.api-key-in-command-line-arg
@@ -2943,7 +2943,7 @@ rules:
     - https://cwe.mitre.org/data/definitions/214.html
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://docs.python.org/3/library/subprocess.html#security-considerations
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets
 - id: python.secrets.hardcoded-llm-api-key
@@ -2986,7 +2986,7 @@ rules:
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://huggingface.co/docs/hub/security-tokens
     - https://docs.github.com/en/code-security/secret-scanning/introduction/supported-secret-scanning-patterns
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets
 - id: python.secrets.llm-api-key-logged
@@ -3064,6 +3064,6 @@ rules:
     - https://cwe.mitre.org/data/definitions/532.html
     - https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/
     - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    masoon:
+    pack:
       pack: agentic-semgrep-rules
       family: secrets

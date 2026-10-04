@@ -6,7 +6,7 @@ Date: 2026-10-03. Semgrep 1.179.0. Pack: 36 rules (23 Python, 13 TypeScript/Java
 
 1. `semgrep --test --config rules tests`: every rule's fixture, with `ruleid` lines that must be reported and `ok` lines that must not.
 2. `scripts/check_fixtures.py`: the whole fixture tree scanned with the whole pack; any finding on a line not annotated for that rule fails. This catches a rule firing on another rule's fixture, which `--test` does not.
-3. `semgrep --config rules --metrics=off` against real code from sibling projects, as a false-positive check. The targets are agent-infrastructure code that handles credentials, policies and LLM calls, so they exercise the sources and sinks the pack looks for.
+3. `semgrep --config rules --metrics=off` against real code from a public sibling repository, [agent-threat-model](https://github.com/basitalisandhu/agent-threat-model), as a false-positive check.
 
 ## Results
 
@@ -21,13 +21,9 @@ fixture audit: 175 findings, 175 ruleid annotations, 0 findings on unannotated l
 
 | Target | Files scanned | Findings |
 |---|---|---|
-| `hisar-broker/src` (TypeScript credential broker) | 25 | 0 |
-| `llm-agent-control-plane/pep` (Python policy enforcement point) | 17 | 0 |
-| `hisar-broker` incl. `test/`, `examples/`, `packages/` | 45 | 0 |
-| `llm-agent-control-plane` incl. `experiments/` | 54 | 0 |
 | `agent-threat-model` (Python CLI, package, scripts and tests) | 21 | 0 |
 
-No findings on 120 real files across three codebases, including the two required targets.
+No findings on 21 real files.
 
 ## Tuning done during the smoke test
 

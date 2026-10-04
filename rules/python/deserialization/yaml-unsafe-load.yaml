@@ -41,6 +41,6 @@ rules:
         - https://cwe.mitre.org/data/definitions/502.html
         - https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
         - https://pyyaml.org/wiki/PyYAMLDocumentation
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: model-supply-chain

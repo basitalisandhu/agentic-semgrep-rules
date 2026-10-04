@@ -100,6 +100,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/918.html
         - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
-      masoon:
+      pack:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

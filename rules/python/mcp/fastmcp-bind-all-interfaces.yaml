@@ -39,6 +39,6 @@ rules:
         - https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
         - https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#security-warning
         - https://github.com/modelcontextprotocol/python-sdk
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: mcp-exposure

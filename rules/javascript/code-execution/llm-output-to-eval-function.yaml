@@ -87,6 +87,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/95.html
         - https://nodejs.org/api/vm.html#vm-executing-javascript
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

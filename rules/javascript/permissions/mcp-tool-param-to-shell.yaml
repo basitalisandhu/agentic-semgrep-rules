@@ -101,6 +101,6 @@ rules:
         - https://cwe.mitre.org/data/definitions/78.html
         - https://modelcontextprotocol.io/specification/2025-06-18/server/tools#security-considerations
         - https://github.com/modelcontextprotocol/typescript-sdk
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: excessive-agency

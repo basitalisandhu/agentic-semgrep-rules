@@ -99,6 +99,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/
         - https://cwe.mitre.org/data/definitions/78.html
         - https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: llm-output-to-sink

@@ -45,6 +45,6 @@ rules:
         - https://docs.python.org/3/library/pickle.html
         - https://huggingface.co/docs/hub/security-pickle
         - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: model-supply-chain

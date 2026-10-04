@@ -2,7 +2,7 @@
 
 Semgrep rules for AI agent code: static analysis for LLM applications in Python, TypeScript and JavaScript that finds model output flowing into `exec`, shells, SQL, URLs, file paths and HTML (eval of model output, SSRF through tool URLs), user input written into system prompts, tools that let the model run anything, MCP server security checks (HTTP transports without authentication, servers bound to every interface), leaked provider keys, and unsafe model or config loading. For teams that ship LLM agents, MCP servers and tool-using assistants and want these mistakes caught in a pull request rather than found in an incident.
 
-36 rules (23 Python, 13 TypeScript/JavaScript), every one with a tested fixture, CWE and OWASP LLM Top 10 (2025) mapping, and a message that says what is wrong and how to fix it. Part of [Hisar](https://github.com/basitalisandhu/hisar) ([docs](https://basitalisandhu.github.io/hisar/)), open-source trust infrastructure for AI agents.
+36 rules (23 Python, 13 TypeScript/JavaScript), every one with a tested fixture, CWE and OWASP LLM Top 10 (2025) mapping, and a message that says what is wrong and how to fix it. Part of [Masoon](https://github.com/basitalisandhu/masoon) ([docs](https://basitalisandhu.github.io/masoon/)), open-source trust infrastructure for AI agents.
 
 ```sh
 pip install semgrep
@@ -233,8 +233,8 @@ Yes to both. The pack is MIT licensed, so it can be run in commercial CI and ven
 
 ## Sibling projects
 
-- [hisar](https://github.com/basitalisandhu/hisar): platform overview and front door, with a [docs site](https://basitalisandhu.github.io/hisar/).
-- [hisar-broker](https://basitalisandhu.github.io/hisar/hisar-broker.html): scoped, short-lived, per-action credentials for AI agents with human approvals, kill switch and hash-chained audit log.
+- [masoon](https://github.com/basitalisandhu/masoon): platform overview and front door, with a [docs site](https://basitalisandhu.github.io/masoon/).
+- [Masoon Broker](https://basitalisandhu.github.io/masoon/masoon-broker.html): scoped, short-lived, per-action credentials for AI agents with human approvals, kill switch and hash-chained audit log.
 - [llm-agent-control-plane](https://github.com/basitalisandhu/llm-agent-control-plane): deterministic policy enforcement point for LLM agents (provenance and approval rules), evaluated on AgentDojo, with an 80-event incident dataset.
 - [ai-agent-incidents](https://github.com/basitalisandhu/ai-agent-incidents): open, structured dataset of publicly documented AI agent security incidents, mapped to OWASP and MITRE ATLAS, with a [browsable site](https://basitalisandhu.github.io/ai-agent-incidents/).
 - [agent-threat-model](https://github.com/basitalisandhu/agent-threat-model): CLI that turns a YAML description of an agent system into a STRIDE + OWASP Agentic threat model, control checklist and Mermaid diagram.

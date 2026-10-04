@@ -24,6 +24,6 @@ rules:
         - https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
         - https://cwe.mitre.org/data/definitions/94.html
         - https://python.langchain.com/api_reference/experimental/agents/langchain_experimental.agents.agent_toolkits.pandas.base.create_pandas_dataframe_agent.html
-      hisar:
+      masoon:
         pack: agentic-semgrep-rules
         family: excessive-agency

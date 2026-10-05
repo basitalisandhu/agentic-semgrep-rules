@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+- Cover ESM `.mjs` and CommonJS `.cjs` child-process injection with unsafe
+  model-output commands and safe fixed-executable argument-array fixtures.
+
 ### Changed
 
 - Removed the umbrella branding; this project stands alone and links its sibling repositories directly.

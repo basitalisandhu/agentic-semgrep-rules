@@ -156,14 +156,14 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: basitalisandhu/agentic-semgrep-rules@v1   # or pin a release tag such as v1.0.0
+      - uses: actions/checkout@v7
+      - uses: basitalisandhu/agentic-semgrep-rules@v0   # or pin a release tag such as v0.2.0
         with:
           severity: ERROR        # fail the job at this level or above (INFO, WARNING, ERROR)
           upload-sarif: "true"   # publish all findings to the Security tab
 ```
 
-Inputs: `config` (default: the bundled `rules` directory; a path, URL or registry reference), `paths` (default `.`), `severity`, `upload-sarif`, `sarif-file`, `semgrep-version`, `extra-args`. The action installs Semgrep, writes `results.sarif`, uploads it with `github/codeql-action/upload-sarif@v3` and fails the job when findings at or above the threshold exist.
+Inputs: `config` (default: the bundled `rules` directory; a path, URL or registry reference), `paths` (default `.`), `severity`, `upload-sarif`, `sarif-file`, `semgrep-version`, `extra-args`. The action installs Semgrep, writes `results.sarif`, uploads it with `github/codeql-action/upload-sarif@v4` and fails the job when findings at or above the threshold exist.
 
 ### pre-commit
 
@@ -172,7 +172,7 @@ The hook runs the bundled rules on staged Python, TypeScript and JavaScript file
 ```yaml
 repos:
   - repo: https://github.com/basitalisandhu/agentic-semgrep-rules
-    rev: v1.0.0
+    rev: v0.2.0
     hooks:
       - id: agentic-semgrep-rules
 ```

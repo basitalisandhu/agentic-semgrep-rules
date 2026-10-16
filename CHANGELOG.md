@@ -4,16 +4,27 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-- Cover ESM `.mjs` and CommonJS `.cjs` child-process injection with unsafe
-  model-output commands and safe fixed-executable argument-array fixtures.
+## [0.2.0] - 2026-10-16
+
+### Fixed
+
+- False positives found by scanning two public agent codebases (modelcontextprotocol/servers and openai/openai-agents-python, 807 files: 32 findings, 22 false positives before, 10 findings and none false after). File-path rules accept helpers named like `validatePath` / `validate_repo_path` as containment checks and no longer treat `Path(...)` as a sink; the Python `llm-api-key-logged` rule no longer taints results of calls that only receive the key; `langchain-dangerous-tools` ignores the OpenAI Agents SDK `ShellTool`; `fastmcp-bind-all-interfaces` ignores `uvicorn.run(app)` and Flask or FastAPI apps (#14). Details in `docs/smoke-test.md`.
+- 19 rule messages printed a literal `'$SINK'`, `'$PARAM'`, `'$LOADER'` or `'$TRANSPORT'`; they are reworded and the fixture audit now fails on any unrendered metavariable (#14).
+- README examples pinned `@v1` and `v1.0.0`, which never existed; they now use `@v0` and `v0.2.0`. The first release was tagged `v0.1.0`, so its CHANGELOG heading is corrected below.
+
+### Added
+
+- `scripts/check_metadata.py` checks that severity agrees with confidence, likelihood and impact, and that every rule has a `ruleid` and an `ok` fixture line (#14).
+- `docs/registry.md`: the two routes to the Semgrep Registry and what each needs (#14).
+- ESM `.mjs` and CommonJS `.cjs` child-process fixtures.
 
 ### Changed
 
+- Semgrep pinned to 1.181.0 in CI, the release workflow and the action default (#14).
 - Removed the umbrella branding; this project stands alone and links its sibling repositories directly.
 - The per-rule `metadata.masoon` block is now `metadata.pack`, with the same `pack` and `family` fields. Rule ids are unchanged. Consumers that group SARIF results on the old key need to read the new one.
-- Renamed the umbrella project from Hisar to Masoon; links, names and identifiers updated.
 
-## [1.0.0] - 2026-10-03
+## [0.1.0] - 2026-10-04
 
 ### Added
 

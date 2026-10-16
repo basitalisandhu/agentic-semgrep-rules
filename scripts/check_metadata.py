@@ -32,6 +32,26 @@ OWASP_RE = re.compile(r"^LLM(0[1-9]|10):2025 .+")
 ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
+def check_fixture_cases(path: pathlib.Path, rid: str) -> list[str]:
+    """Every rule needs at least one positive (ruleid) and one negative (ok) fixture line."""
+    if "rules" not in path.parts or not rid:
+        return []
+    idx = path.parts.index("rules")
+    tests_dir = pathlib.Path(*path.parts[:idx], "tests", *path.parts[idx + 1 : -1])
+    text = "".join(
+        f.read_text(encoding="utf-8")
+        for f in sorted(tests_dir.glob(f"{path.stem}*"))
+        if f.is_file() and f.suffix not in {".yaml", ".yml"}
+    )
+    word = re.escape(rid)
+    problems = []
+    if not re.search(rf"ruleid:[^\n]*\b{word}\b", text):
+        problems.append(f"no positive fixture ('ruleid: {rid}') under {tests_dir}")
+    if not re.search(rf"\bok:[^\n]*\b{word}\b", text):
+        problems.append(f"no negative fixture ('ok: {rid}') under {tests_dir}")
+    return problems
+
+
 def check_rule(path: pathlib.Path, rule: dict) -> list[str]:
     problems: list[str] = []
     for key in REQUIRED_TOP:
@@ -65,6 +85,12 @@ def check_rule(path: pathlib.Path, rule: dict) -> list[str]:
     refs = meta.get("references", [])
     if not refs or not all(str(r).startswith("https://") for r in refs):
         problems.append("metadata.references must be a non-empty list of https URLs")
+    levels = {meta.get(k) for k in ("confidence", "likelihood", "impact")}
+    if rule.get("severity") == "ERROR" and levels != {"HIGH"}:
+        problems.append("severity ERROR needs confidence, likelihood and impact all HIGH")
+    if rule.get("severity") != "ERROR" and levels == {"HIGH"}:
+        problems.append("confidence, likelihood and impact are all HIGH, so severity must be ERROR")
+    problems.extend(check_fixture_cases(path, rid))
     lang_dir = path.parts[path.parts.index("rules") + 1] if "rules" in path.parts else ""
     langs = set(rule.get("languages", []))
     if lang_dir == "python" and langs != {"python"}:

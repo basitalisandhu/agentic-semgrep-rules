@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: WARNING
     message: >-
-      Text returned by a language model is rendered as raw HTML by '$SINK'. Models can be made to
+      Text returned by a language model is rendered as raw HTML. Models can be made to
       emit script tags, event handlers or markdown with embedded HTML, which turns a prompt injection
       into cross-site scripting against whoever views the answer (session theft, actions in the
       user's browser). Render model output as text, or convert markdown with HTML disabled and

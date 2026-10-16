@@ -65,3 +65,17 @@ server.tool("append_note", { text: z.string() }, async ({ text }) => {
   fs.appendFileSync(path.join(WORKSPACE, "notes.txt"), text);
   return { content: [] };
 });
+
+server.registerTool("create_directory", { inputSchema: { path: z.string() } }, async (args) => {
+  const validPath = await validatePath(args.path, allowedDirectories);
+  // ok: mcp-tool-param-to-file-path
+  await fs.mkdir(validPath, { recursive: true });
+  return { content: [] };
+});
+
+server.registerTool("list_directory", { inputSchema: { path: z.string() } }, async (args) => {
+  const target = path.resolve(args.path);
+  // ruleid: mcp-tool-param-to-file-path
+  const entries = await fs.readdir(target, { withFileTypes: true });
+  return { content: [{ type: "text", text: String(entries.length) }] };
+});

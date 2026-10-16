@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: WARNING
     message: >-
-      Tool parameter '$PARAM' is filled in by the model and is used as a file path by '$SINK'
+      A tool parameter is filled in by the model and is used as a file path
       without a containment check. A prompt injection can make the agent read or overwrite any file
       this process can reach (credentials, keys, other users' data). Resolve the path against a
       fixed base directory, verify the resolved path is still inside it (Path.resolve() plus
@@ -84,6 +84,23 @@ rules:
           - pattern-not: ctx
           - pattern-not: context
     pattern-sanitizers:
+      # A path checked by a helper named like validate_path or ensure_safe_path
+      # (by side effect, or through its return value) is treated as contained.
+      - by-side-effect: true
+        patterns:
+          - pattern: $VALIDATE(..., $P, ...)
+          - metavariable-regex:
+              metavariable: $VALIDATE
+              regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $X = $VALIDATE(...)
+              - pattern-inside: $X = await $VALIDATE(...)
+          - pattern: $VALIDATE(...)
+          - metavariable-regex:
+              metavariable: $VALIDATE
+              regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
       - pattern: os.path.basename(...)
       - pattern: secure_filename(...)
       - pattern: werkzeug.utils.secure_filename(...)
@@ -146,8 +163,6 @@ rules:
               - pattern: shutil.copy($SRC, $PATH)
               - pattern: shutil.move($PATH, ...)
               - pattern: shutil.move($SRC, $PATH)
-              - pattern: pathlib.Path($PATH, ...)
-              - pattern: Path($PATH, ...)
               - pattern: send_file($PATH, ...)
               - pattern: FileResponse($PATH, ...)
               - pattern: TextLoader($PATH, ...)

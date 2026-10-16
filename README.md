@@ -9,6 +9,25 @@ pip install semgrep
 semgrep --config https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml .
 ```
 
+Output on an agent that runs model-written code (excerpt; the file is [`tests/python/code-execution/llm-output-to-exec-eval.py`](tests/python/code-execution/llm-output-to-exec-eval.py)):
+
+```text
+    agent.py
+   ❯❯❱ python.code-execution.llm-output-to-exec-eval
+          ❰❰ Blocking ❱❱
+          Text returned by a language model flows into a call that executes it as Python. A prompt injection
+          in any document, web page or tool result the model has read becomes arbitrary code execution in this
+          process. Do not execute model output. [...]
+
+           15┆ exec(code)
+            ⋮┆----------------------------------------
+           17┆ return eval(code.strip())
+            ⋮┆----------------------------------------
+           23┆ exec(resp.output_text)
+```
+
+On two large public agent codebases (the official MCP reference servers and the OpenAI Agents SDK, 807 files) the pack reports 10 findings, all of them real for the rule's definition; see [docs/smoke-test.md](docs/smoke-test.md).
+
 ## When to use this
 
 - **How do I catch eval of model output, or model output reaching a shell, in CI?** The `llm-output-to-*` rules track text returned by the OpenAI, Anthropic, LiteLLM, Ollama, Google GenAI, Vercel AI and LangChain calls into `exec`, `eval`, `subprocess`, `child_process` and the other sinks in the tables below.
@@ -113,12 +132,12 @@ git clone https://github.com/basitalisandhu/agentic-semgrep-rules
 semgrep --config agentic-semgrep-rules/rules .
 ```
 
-Semgrep registry publication (`semgrep --config p/agentic-semgrep-rules`) is pending; until then use the bundle URL or a clone. Each release also attaches the bundle and a tarball of the `rules` directory to vendor.
+The rules are not in the Semgrep Registry yet ([docs/registry.md](docs/registry.md) explains the options); use the bundle URL or a clone. Each release also attaches the bundle and a tarball of the `rules` directory to vendor.
 
 ### CI (any provider)
 
 ```sh
-pip install semgrep==1.179.0
+pip install semgrep==1.181.0
 semgrep --config https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml \
   --metrics=off --error --severity ERROR .
 ```
@@ -163,7 +182,7 @@ If you already run Semgrep's own hook, point it at the bundle instead:
 ```yaml
 repos:
   - repo: https://github.com/semgrep/pre-commit
-    rev: v1.179.0
+    rev: v1.181.0
     hooks:
       - id: semgrep
         args: ["--config", "https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml", "--error", "--metrics=off"]
@@ -224,7 +243,7 @@ Yes to both. The pack is MIT licensed, so it can be run in commercial CI and ven
 
 ## Roadmap
 
-- Semgrep registry publication (`p/agentic-semgrep-rules`) and an `awesome-semgrep` listing.
+- Semgrep Registry publication (see [docs/registry.md](docs/registry.md)) and an `awesome-semgrep` listing.
 - Go and Java coverage for the `llm-output-to-*` family.
 - Rules for agent memory and RAG stores (unsanitised retrieval text in prompts, pickle-backed vector stores).
 - Secrets in agent configuration files (`.mcp.json`, desktop-client MCP config files, `.env` committed next to agent code) via the generic language.

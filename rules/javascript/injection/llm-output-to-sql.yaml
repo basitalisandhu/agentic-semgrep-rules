@@ -4,7 +4,7 @@ rules:
     severity: ERROR
     message: >-
       Text returned by a language model is used as a SQL statement (or interpolated into one) and
-      executed by '$SINK'. A prompt injection becomes SQL injection: data exfiltration, modification
+      executed by the database. A prompt injection becomes SQL injection: data exfiltration, modification
       or deletion with the privileges of the database user. Never execute model-written SQL
       directly. Use parameterised queries where the model only supplies values (query(text, [values]),
       Prisma.sql tagged templates, knex bindings), or run model-generated SQL on a read-only

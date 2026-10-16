@@ -18,6 +18,10 @@ rules:
               - metavariable-regex:
                   metavariable: $TOOL
                   regex: ^(ShellTool|PythonREPLTool|PythonAstREPLTool|PythonREPL|BashProcess)$
+              # The OpenAI Agents SDK has its own ShellTool, which takes an explicit
+              # executor or sandbox environment; it is not the LangChain tool.
+              - pattern-not: agents.ShellTool(...)
+              - pattern-not: agents.tool.ShellTool(...)
           - patterns:
               - pattern-either:
                   - pattern: load_tools([..., "$TOOL", ...], ...)

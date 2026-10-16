@@ -8,12 +8,11 @@ rules:
   - javascript
   - typescript
   severity: ERROR
-  message: 'Text returned by a language model is passed to child_process (''$SINK'') as a command, or
-    as an argument with shell: true. A prompt injection in any page, document or tool result the model
-    has read becomes OS command injection with this process''s privileges. Do not let the model compose
-    commands. Expose fixed executables as tools, pass model-chosen values as separate array arguments
-    to execFile or spawn without shell: true, validate them against an allowlist, and run with least privilege
-    and a timeout.'
+  message: 'Text returned by a language model is passed to child_process as a command, or as an argument
+    with shell: true. A prompt injection in any page, document or tool result the model has read becomes
+    OS command injection with this process''s privileges. Do not let the model compose commands. Expose
+    fixed executables as tools, pass model-chosen values as separate array arguments to execFile or spawn
+    without shell: true, validate them against an allowlist, and run with least privilege and a timeout.'
   mode: taint
   pattern-sources:
   - pattern: $CLIENT.chat.completions.create(...)
@@ -120,7 +119,7 @@ rules:
   - javascript
   - typescript
   severity: ERROR
-  message: Text returned by a language model flows into '$SINK', which compiles and runs it as JavaScript.
+  message: Text returned by a language model flows into a call that compiles and runs it as JavaScript.
     A prompt injection in any page, document or tool result the model has read becomes arbitrary code
     execution in this process (the vm module is not a security boundary). Do not execute model output.
     If generated code must run, use an isolated sandbox (isolated-vm, a WebAssembly runtime, or a separate
@@ -219,12 +218,12 @@ rules:
   - javascript
   - typescript
   severity: WARNING
-  message: 'A URL chosen by a language model is requested by ''$SINK''. A prompt injection can point the
-    agent at internal services (cloud metadata endpoints, admin panels, localhost ports) or at an attacker''s
-    server to exfiltrate data: server-side request forgery through a tool URL. Validate the URL before
-    fetching: parse it with new URL(), allow only http and https, resolve the host and reject private,
-    loopback and link-local ranges, apply a host allowlist where possible, disable or re-validate redirects,
-    and set timeouts and response size limits.'
+  message: 'A URL chosen by a language model is requested. A prompt injection can point the agent at internal
+    services (cloud metadata endpoints, admin panels, localhost ports) or at an attacker''s server to
+    exfiltrate data: server-side request forgery through a tool URL. Validate the URL before fetching:
+    parse it with new URL(), allow only http and https, resolve the host and reject private, loopback
+    and link-local ranges, apply a host allowlist where possible, disable or re-validate redirects, and
+    set timeouts and response size limits.'
   mode: taint
   pattern-sources:
   - pattern: $CLIENT.chat.completions.create(...)
@@ -334,8 +333,8 @@ rules:
   - javascript
   - typescript
   severity: WARNING
-  message: 'A file path chosen by a language model is used by ''$SINK'' without containment checks. A
-    prompt injection can read or overwrite any file this process can reach (.env files, SSH keys, source
+  message: 'A file path chosen by a language model is opened, written or deleted without containment checks.
+    A prompt injection can read or overwrite any file this process can reach (.env files, SSH keys, source
     code, other users'' data): path traversal through a tool argument. Resolve the path against a fixed
     base directory with path.resolve, verify the result still starts with that base (plus path.sep), reject
     symlinks where appropriate, and apply an allowlist of names or extensions.'
@@ -378,6 +377,21 @@ rules:
   - pattern: $R.content[0].text
   - pattern: $R.response.text()
   pattern-sanitizers:
+  - by-side-effect: true
+    patterns:
+    - pattern: $VALIDATE(..., $P, ...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
+    - focus-metavariable: $P
+  - patterns:
+    - pattern-either:
+      - pattern-inside: $X = $VALIDATE(...)
+      - pattern-inside: $X = await $VALIDATE(...)
+    - pattern: $VALIDATE(...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
   - pattern: path.basename(...)
   - pattern: sanitizeFilename(...)
   - pattern: sanitize(...)
@@ -472,11 +486,11 @@ rules:
   - javascript
   - typescript
   severity: WARNING
-  message: Text returned by a language model is inserted into the DOM as HTML by '$SINK'. Models can be
-    made to emit script tags, event handlers or markdown with embedded HTML, which turns a prompt injection
-    into cross-site scripting against whoever views the answer (session theft, actions in the user's browser).
-    Render model output as text (textContent, React children), or convert markdown with HTML disabled
-    and sanitise the result with DOMPurify before inserting it.
+  message: Text returned by a language model is inserted into the DOM as HTML. Models can be made to emit
+    script tags, event handlers or markdown with embedded HTML, which turns a prompt injection into cross-site
+    scripting against whoever views the answer (session theft, actions in the user's browser). Render
+    model output as text (textContent, React children), or convert markdown with HTML disabled and sanitise
+    the result with DOMPurify before inserting it.
   mode: taint
   pattern-sources:
   - pattern: $CLIENT.chat.completions.create(...)
@@ -574,10 +588,10 @@ rules:
   - typescript
   severity: ERROR
   message: 'Text returned by a language model is used as a SQL statement (or interpolated into one) and
-    executed by ''$SINK''. A prompt injection becomes SQL injection: data exfiltration, modification or
-    deletion with the privileges of the database user. Never execute model-written SQL directly. Use parameterised
-    queries where the model only supplies values (query(text, [values]), Prisma.sql tagged templates,
-    knex bindings), or run model-generated SQL on a read-only connection restricted to an allowlisted
+    executed by the database. A prompt injection becomes SQL injection: data exfiltration, modification
+    or deletion with the privileges of the database user. Never execute model-written SQL directly. Use
+    parameterised queries where the model only supplies values (query(text, [values]), Prisma.sql tagged
+    templates, knex bindings), or run model-generated SQL on a read-only connection restricted to an allowlisted
     schema with statement timeouts.'
   mode: taint
   pattern-sources:
@@ -763,11 +777,11 @@ rules:
   - javascript
   - typescript
   severity: WARNING
-  message: Tool argument '$PARAM' is filled in by the model and is used as a file path by '$SINK' without
-    a containment check. A prompt injection can make the agent read or overwrite any file this process
-    can reach (.env files, SSH keys, other users' data). Resolve the path against a fixed base directory
-    with path.resolve, verify the result still starts with that base (plus path.sep), reject symlinks
-    where appropriate, and restrict names or extensions with an allowlist in the tool schema.
+  message: A tool argument is filled in by the model and is used as a file path without a containment
+    check. A prompt injection can make the agent read or overwrite any file this process can reach (.env
+    files, SSH keys, other users' data). Resolve the path against a fixed base directory with path.resolve,
+    verify the result still starts with that base (plus path.sep), reject symlinks where appropriate,
+    and restrict names or extensions with an allowlist in the tool schema.
   mode: taint
   pattern-sources:
   - patterns:
@@ -796,6 +810,21 @@ rules:
       - pattern: $ARGS.params.arguments
       - pattern: $ARGS.params.arguments.$FIELD
   pattern-sanitizers:
+  - by-side-effect: true
+    patterns:
+    - pattern: $VALIDATE(..., $P, ...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
+    - focus-metavariable: $P
+  - patterns:
+    - pattern-either:
+      - pattern-inside: $X = $VALIDATE(...)
+      - pattern-inside: $X = await $VALIDATE(...)
+    - pattern: $VALIDATE(...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
   - pattern: path.basename(...)
   - pattern: sanitizeFilename(...)
   - pattern: sanitize(...)
@@ -895,8 +924,8 @@ rules:
   - javascript
   - typescript
   severity: ERROR
-  message: 'Tool argument ''$PARAM'' is filled in by the model and reaches ''$SINK'' as a shell command
-    or executable. This is an "execute anything" tool: a prompt injection anywhere in the agent''s context
+  message: 'A tool argument is filled in by the model and reaches a process call as a shell command or
+    executable. This is an "execute anything" tool: a prompt injection anywhere in the agent''s context
     becomes OS command injection on the host running the MCP server. Replace the free-form command with
     a fixed executable and typed arguments, validate each argument against an allowlist in the tool''s
     schema and code, use execFile or spawn without shell: true, run with least privilege and a timeout,
@@ -1327,9 +1356,9 @@ rules:
   languages:
   - python
   severity: ERROR
-  message: Text returned by a language model flows into '$SINK', which executes it as Python. A prompt
-    injection in any document, web page or tool result the model has read becomes arbitrary code execution
-    in this process. Do not execute model output. If the agent must run generated code, run it in an isolated
+  message: Text returned by a language model flows into a call that executes it as Python. A prompt injection
+    in any document, web page or tool result the model has read becomes arbitrary code execution in this
+    process. Do not execute model output. If the agent must run generated code, run it in an isolated
     sandbox (separate container or microVM, no network, no credentials, time limit) and treat the result
     as untrusted data.
   mode: taint
@@ -1414,8 +1443,8 @@ rules:
   languages:
   - python
   severity: ERROR
-  message: Text returned by a language model is passed to '$SINK', which hands it to the system shell.
-    A prompt injection becomes OS command injection with the privileges of this process. Replace os.system,
+  message: Text returned by a language model is passed to a call that hands it to the system shell. A
+    prompt injection becomes OS command injection with the privileges of this process. Replace os.system,
     os.popen and os.exec*/os.spawn* with subprocess.run([...]) using a fixed executable and list arguments,
     validate every model-chosen value against an allowlist, and run with least privilege and a timeout.
   mode: taint
@@ -1652,11 +1681,11 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: '''$LOADER'' unpickles data, and unpickling executes arbitrary code embedded in the file. Model
+  message: This call unpickles data, and unpickling executes arbitrary code embedded in the file. Model
     artefacts, embeddings caches, tokenizers and agent memory files that come from a hub, a bucket, a
     user upload or an earlier agent run are untrusted. Use a data-only format (safetensors, ONNX, JSON,
     numpy .npy with allow_pickle=False), verify checksums or signatures before loading, and if pickle
-    is unavoidable load it in an isolated process with a restricted Unpickler.find_class allowlist.'
+    is unavoidable load it in an isolated process with a restricted Unpickler.find_class allowlist.
   patterns:
   - pattern-either:
     - pattern: pickle.load(...)
@@ -1844,8 +1873,8 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: 'A file path chosen by a language model is used by ''$SINK'' without containment checks. A
-    prompt injection can read or overwrite any file this process can reach (secrets, SSH keys, source
+  message: 'A file path chosen by a language model is opened, written or deleted without containment checks.
+    A prompt injection can read or overwrite any file this process can reach (secrets, SSH keys, source
     code, other users'' data): path traversal through a tool argument. Resolve the path against a fixed
     base directory, verify the resolved path is still inside it (Path.resolve() plus is_relative_to),
     reject symlinks where appropriate, and apply an allowlist of extensions or names.'
@@ -1889,6 +1918,21 @@ rules:
   - pattern: $R["choices"][0]["message"]["content"]
   - pattern: $R["message"]["content"]
   pattern-sanitizers:
+  - by-side-effect: true
+    patterns:
+    - pattern: $VALIDATE(..., $P, ...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
+    - focus-metavariable: $P
+  - patterns:
+    - pattern-either:
+      - pattern-inside: $X = $VALIDATE(...)
+      - pattern-inside: $X = await $VALIDATE(...)
+    - pattern: $VALIDATE(...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
   - pattern: os.path.basename(...)
   - pattern: secure_filename(...)
   - pattern: werkzeug.utils.secure_filename(...)
@@ -1929,8 +1973,6 @@ rules:
       - pattern: shutil.copy($SRC, $PATH)
       - pattern: shutil.move($PATH, ...)
       - pattern: shutil.move($SRC, $PATH)
-      - pattern: pathlib.Path($PATH, ...)
-      - pattern: Path($PATH, ...)
       - pattern: send_file($PATH, ...)
       - pattern: FileResponse($PATH, ...)
       - pattern: TextLoader($PATH, ...)
@@ -1980,11 +2022,11 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: Text returned by a language model is rendered as raw HTML by '$SINK'. Models can be made to
-    emit script tags, event handlers or markdown with embedded HTML, which turns a prompt injection into
-    cross-site scripting against whoever views the answer (session theft, actions in the user's browser).
-    Render model output as text, or convert markdown with HTML disabled and sanitise the result with an
-    allowlist (for example bleach or nh3) before marking it safe.
+  message: Text returned by a language model is rendered as raw HTML. Models can be made to emit script
+    tags, event handlers or markdown with embedded HTML, which turns a prompt injection into cross-site
+    scripting against whoever views the answer (session theft, actions in the user's browser). Render
+    model output as text, or convert markdown with HTML disabled and sanitise the result with an allowlist
+    (for example bleach or nh3) before marking it safe.
   mode: taint
   pattern-sources:
   - pattern: $CLIENT.chat.completions.create(...)
@@ -2085,12 +2127,12 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: 'A URL chosen by a language model is fetched by ''$SINK''. A prompt injection can point the
-    agent at internal services (cloud metadata endpoints, admin panels, localhost ports) or at an attacker''s
-    server to exfiltrate data: server-side request forgery through a tool URL. Validate the URL before
-    fetching: parse it, allow only http/https, resolve the host and reject private, loopback and link-local
-    ranges, apply a host allowlist where possible, disable redirects or re-validate on each hop, and set
-    timeouts and size limits.'
+  message: 'A URL chosen by a language model is fetched. A prompt injection can point the agent at internal
+    services (cloud metadata endpoints, admin panels, localhost ports) or at an attacker''s server to
+    exfiltrate data: server-side request forgery through a tool URL. Validate the URL before fetching:
+    parse it, allow only http/https, resolve the host and reject private, loopback and link-local ranges,
+    apply a host allowlist where possible, disable redirects or re-validate on each hop, and set timeouts
+    and size limits.'
   mode: taint
   pattern-sources:
   - pattern: $CLIENT.chat.completions.create(...)
@@ -2302,8 +2344,13 @@ rules:
   - pattern-either:
     - pattern: FastMCP(..., host="0.0.0.0", ...)
     - pattern: FastMCP(..., host="::", ...)
-    - pattern: $MCP.run(..., host="0.0.0.0", ...)
-    - pattern: $MCP.run(..., host="::", ...)
+    - patterns:
+      - pattern-either:
+        - pattern: $MCP.run(..., host="0.0.0.0", ...)
+        - pattern: $MCP.run(..., host="::", ...)
+      - metavariable-regex:
+          metavariable: $MCP
+          regex: ^(?!(uvicorn|hypercorn)$)
     - pattern: $MCP.run_sse_async(..., host="0.0.0.0", ...)
     - pattern: $MCP.run_http_async(..., host="0.0.0.0", ...)
     - pattern: $MCP.run_streamable_http_async(..., host="0.0.0.0", ...)
@@ -2312,6 +2359,16 @@ rules:
     - pattern: uvicorn.run($MCP.sse_app(...), ..., host="0.0.0.0", ...)
     - pattern: uvicorn.run($MCP.streamable_http_app(...), ..., host="0.0.0.0", ...)
     - pattern: uvicorn.run($MCP.http_app(...), ..., host="0.0.0.0", ...)
+  - pattern-not-inside: '$APP = Flask(...)
+
+      ...
+
+      '
+  - pattern-not-inside: '$APP = FastAPI(...)
+
+      ...
+
+      '
   metadata:
     category: security
     subcategory:
@@ -2341,12 +2398,12 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: This MCP server is started with an HTTP-based transport ('$TRANSPORT') but the FastMCP instance
-    was created without an auth provider or token verifier. Anyone who can reach the port can list and
-    call every tool, and SSE and streamable-HTTP endpoints are also exposed to cross-origin and DNS-rebinding
-    attacks from the browser. Configure authentication (the SDK's auth settings with a token verifier,
-    or FastMCP's auth providers), validate the Origin header, bind to localhost unless remote access is
-    intended, and put TLS in front. Use the stdio transport for local, single-user servers.
+  message: This MCP server is started with an HTTP-based transport but the FastMCP instance was created
+    without an auth provider or token verifier. Anyone who can reach the port can list and call every
+    tool, and SSE and streamable-HTTP endpoints are also exposed to cross-origin and DNS-rebinding attacks
+    from the browser. Configure authentication (the SDK's auth settings with a token verifier, or FastMCP's
+    auth providers), validate the Origin header, bind to localhost unless remote access is intended, and
+    put TLS in front. Use the stdio transport for local, single-user servers.
   patterns:
   - pattern-either:
     - patterns:
@@ -2423,11 +2480,11 @@ rules:
   languages:
   - python
   severity: WARNING
-  message: Tool parameter '$PARAM' is filled in by the model and is used as a file path by '$SINK' without
-    a containment check. A prompt injection can make the agent read or overwrite any file this process
-    can reach (credentials, keys, other users' data). Resolve the path against a fixed base directory,
-    verify the resolved path is still inside it (Path.resolve() plus is_relative_to), reject symlinks
-    where appropriate, and restrict names or extensions with an allowlist.
+  message: A tool parameter is filled in by the model and is used as a file path without a containment
+    check. A prompt injection can make the agent read or overwrite any file this process can reach (credentials,
+    keys, other users' data). Resolve the path against a fixed base directory, verify the resolved path
+    is still inside it (Path.resolve() plus is_relative_to), reject symlinks where appropriate, and restrict
+    names or extensions with an allowlist.
   mode: taint
   pattern-sources:
   - patterns:
@@ -2453,6 +2510,21 @@ rules:
     - pattern-not: ctx
     - pattern-not: context
   pattern-sanitizers:
+  - by-side-effect: true
+    patterns:
+    - pattern: $VALIDATE(..., $P, ...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
+    - focus-metavariable: $P
+  - patterns:
+    - pattern-either:
+      - pattern-inside: $X = $VALIDATE(...)
+      - pattern-inside: $X = await $VALIDATE(...)
+    - pattern: $VALIDATE(...)
+    - metavariable-regex:
+        metavariable: $VALIDATE
+        regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)_?\w*path\w*$
   - pattern: os.path.basename(...)
   - pattern: secure_filename(...)
   - pattern: werkzeug.utils.secure_filename(...)
@@ -2496,8 +2568,6 @@ rules:
       - pattern: shutil.copy($SRC, $PATH)
       - pattern: shutil.move($PATH, ...)
       - pattern: shutil.move($SRC, $PATH)
-      - pattern: pathlib.Path($PATH, ...)
-      - pattern: Path($PATH, ...)
       - pattern: send_file($PATH, ...)
       - pattern: FileResponse($PATH, ...)
       - pattern: TextLoader($PATH, ...)
@@ -2547,8 +2617,8 @@ rules:
   languages:
   - python
   severity: ERROR
-  message: 'Tool parameter ''$PARAM'' is filled in by the model and reaches ''$SINK'' as a shell command
-    or executable. This is an "execute anything" tool: a prompt injection anywhere in the agent''s context
+  message: 'A tool parameter is filled in by the model and reaches a process call as a shell command or
+    executable. This is an "execute anything" tool: a prompt injection anywhere in the agent''s context
     becomes OS command injection on the host running the tool. Replace the free-form command with a fixed
     executable and typed arguments, validate each argument against an allowlist, never use shell=True,
     run with least privilege and a timeout, and require human approval for anything with side effects.'
@@ -2740,6 +2810,8 @@ rules:
       - metavariable-regex:
           metavariable: $TOOL
           regex: ^(ShellTool|PythonREPLTool|PythonAstREPLTool|PythonREPL|BashProcess)$
+      - pattern-not: agents.ShellTool(...)
+      - pattern-not: agents.tool.ShellTool(...)
     - patterns:
       - pattern-either:
         - pattern: load_tools([..., "$TOOL", ...], ...)
@@ -3026,6 +3098,11 @@ rules:
   - pattern: $X[-4:]
   - pattern: $X[:4]
   - pattern: $X[-6:]
+  - patterns:
+    - pattern: $F(...)
+    - metavariable-regex:
+        metavariable: $F
+        regex: ^(?!(str|repr|format|dict|list|tuple|set|sorted|vars|print|pprint|getenv|config|dotenv_values|json\.dumps|os\.getenv|os\.environ\.get|(?s:.*)\.(format|join|strip|lstrip|rstrip|encode|decode|lower|upper|replace|get|copy|items|values|keys|debug|info|warning|warn|error|critical|exception|log|success|trace|write|print|text|dumps))$)
   pattern-sinks:
   - pattern: print(...)
   - pattern: pprint(...)

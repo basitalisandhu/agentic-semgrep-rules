@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: ERROR
     message: >-
-      Text returned by a language model flows into '$SINK', which executes it as Python.
+      Text returned by a language model flows into a call that executes it as Python.
       A prompt injection in any document, web page or tool result the model has read becomes
       arbitrary code execution in this process. Do not execute model output. If the agent must
       run generated code, run it in an isolated sandbox (separate container or microVM, no network,

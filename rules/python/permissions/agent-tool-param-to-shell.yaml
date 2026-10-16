@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: ERROR
     message: >-
-      Tool parameter '$PARAM' is filled in by the model and reaches '$SINK' as a shell command or
+      A tool parameter is filled in by the model and reaches a process call as a shell command or
       executable. This is an "execute anything" tool: a prompt injection anywhere in the agent's
       context becomes OS command injection on the host running the tool. Replace the free-form
       command with a fixed executable and typed arguments, validate each argument against an

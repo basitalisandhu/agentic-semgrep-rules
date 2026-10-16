@@ -13,8 +13,15 @@ rules:
       - pattern-either:
           - pattern: FastMCP(..., host="0.0.0.0", ...)
           - pattern: FastMCP(..., host="::", ...)
-          - pattern: $MCP.run(..., host="0.0.0.0", ...)
-          - pattern: $MCP.run(..., host="::", ...)
+          - patterns:
+              - pattern-either:
+                  - pattern: $MCP.run(..., host="0.0.0.0", ...)
+                  - pattern: $MCP.run(..., host="::", ...)
+              # uvicorn.run and hypercorn.run also take host=; they are covered below
+              # only when the app is one of the MCP app factories.
+              - metavariable-regex:
+                  metavariable: $MCP
+                  regex: ^(?!(uvicorn|hypercorn)$)
           - pattern: $MCP.run_sse_async(..., host="0.0.0.0", ...)
           - pattern: $MCP.run_http_async(..., host="0.0.0.0", ...)
           - pattern: $MCP.run_streamable_http_async(..., host="0.0.0.0", ...)
@@ -23,6 +30,13 @@ rules:
           - pattern: uvicorn.run($MCP.sse_app(...), ..., host="0.0.0.0", ...)
           - pattern: uvicorn.run($MCP.streamable_http_app(...), ..., host="0.0.0.0", ...)
           - pattern: uvicorn.run($MCP.http_app(...), ..., host="0.0.0.0", ...)
+      # Flask and FastAPI apps also have run(host=...); they are web apps, not MCP servers.
+      - pattern-not-inside: |
+          $APP = Flask(...)
+          ...
+      - pattern-not-inside: |
+          $APP = FastAPI(...)
+          ...
     metadata:
       category: security
       subcategory: [audit]

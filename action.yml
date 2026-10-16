@@ -29,7 +29,7 @@ inputs:
   semgrep-version:
     description: "Semgrep version to install with pip."
     required: false
-    default: "1.179.0"
+    default: "1.181.0"
   extra-args:
     description: "Extra arguments passed to semgrep (for example --exclude tests)."
     required: false

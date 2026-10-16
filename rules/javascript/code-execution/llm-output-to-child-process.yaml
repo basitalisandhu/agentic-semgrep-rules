@@ -3,7 +3,7 @@ rules:
     languages: [javascript, typescript]
     severity: ERROR
     message: >-
-      Text returned by a language model is passed to child_process ('$SINK') as a command, or as
+      Text returned by a language model is passed to child_process as a command, or as
       an argument with shell: true. A prompt injection in any page, document or tool result the
       model has read becomes OS command injection with this process's privileges. Do not let the
       model compose commands. Expose fixed executables as tools, pass model-chosen values as

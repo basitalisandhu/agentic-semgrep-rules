@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: ERROR
     message: >-
-      Text returned by a language model is passed to '$SINK', which hands it to the system shell.
+      Text returned by a language model is passed to a call that hands it to the system shell.
       A prompt injection becomes OS command injection with the privileges of this process.
       Replace os.system, os.popen and os.exec*/os.spawn* with subprocess.run([...]) using a fixed
       executable and list arguments, validate every model-chosen value against an allowlist, and run

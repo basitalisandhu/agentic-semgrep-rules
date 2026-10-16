@@ -3,7 +3,7 @@ rules:
     languages: [javascript, typescript]
     severity: WARNING
     message: >-
-      A URL chosen by a language model is requested by '$SINK'. A prompt injection can point the
+      A URL chosen by a language model is requested. A prompt injection can point the
       agent at internal services (cloud metadata endpoints, admin panels, localhost ports) or at an
       attacker's server to exfiltrate data: server-side request forgery through a tool URL.
       Validate the URL before fetching: parse it with new URL(), allow only http and https, resolve

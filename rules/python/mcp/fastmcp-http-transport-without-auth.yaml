@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: WARNING
     message: >-
-      This MCP server is started with an HTTP-based transport ('$TRANSPORT') but the FastMCP
+      This MCP server is started with an HTTP-based transport but the FastMCP
       instance was created without an auth provider or token verifier. Anyone who can reach the
       port can list and call every tool, and SSE and streamable-HTTP endpoints are also exposed to
       cross-origin and DNS-rebinding attacks from the browser. Configure authentication

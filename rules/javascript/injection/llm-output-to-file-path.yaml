@@ -3,7 +3,7 @@ rules:
     languages: [javascript, typescript]
     severity: WARNING
     message: >-
-      A file path chosen by a language model is used by '$SINK' without containment checks.
+      A file path chosen by a language model is opened, written or deleted without containment checks.
       A prompt injection can read or overwrite any file this process can reach (.env files, SSH
       keys, source code, other users' data): path traversal through a tool argument. Resolve the
       path against a fixed base directory with path.resolve, verify the result still starts with
@@ -51,6 +51,23 @@ rules:
       - pattern: $R.content[0].text
       - pattern: $R.response.text()
     pattern-sanitizers:
+      # A path checked by a helper named like validatePath or ensureSafePath
+      # (by side effect, or through its return value) is treated as contained.
+      - by-side-effect: true
+        patterns:
+          - pattern: $VALIDATE(..., $P, ...)
+          - metavariable-regex:
+              metavariable: $VALIDATE
+              regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $X = $VALIDATE(...)
+              - pattern-inside: $X = await $VALIDATE(...)
+          - pattern: $VALIDATE(...)
+          - metavariable-regex:
+              metavariable: $VALIDATE
+              regex: (?i)^(.*\.)?_*(validate|check|ensure|assert|verify)\w*path\w*$
       - pattern: path.basename(...)
       - pattern: sanitizeFilename(...)
       - pattern: sanitize(...)

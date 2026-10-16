@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: WARNING
     message: >-
-      A URL chosen by a language model is fetched by '$SINK'. A prompt injection can point the
+      A URL chosen by a language model is fetched. A prompt injection can point the
       agent at internal services (cloud metadata endpoints, admin panels, localhost ports) or at an
       attacker's server to exfiltrate data: server-side request forgery through a tool URL.
       Validate the URL before fetching: parse it, allow only http/https, resolve the host and reject

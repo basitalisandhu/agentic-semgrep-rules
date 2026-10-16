@@ -34,3 +34,24 @@ logger.info("key suffix ...%s", key[-4:])
 client = OpenAI(api_key=key)
 # ok: llm-api-key-logged
 print(os.environ["HOME"])
+
+
+def fetch_open_milestones(owner, repo, token):
+    return http_get(f"https://api.github.com/repos/{owner}/{repo}/milestones", token=token)
+
+
+token = os.environ.get("GITHUB_TOKEN")
+milestones = fetch_open_milestones("o", "r", token)
+# ok: llm-api-key-logged
+print(milestones[0]["title"])
+
+client = AsyncOpenAI(api_key=os.getenv("OPENROUTER_API_KEY"))
+agent = Agent(name="a", model=OpenAIChatCompletionsModel(model="m", openai_client=client))
+result = Runner.run_sync(agent, "hi")
+# ok: llm-api-key-logged
+print(result.final_output)
+
+# ruleid: llm-api-key-logged
+print("key: {}".format(key))
+# ruleid: llm-api-key-logged
+print(str(key).strip())

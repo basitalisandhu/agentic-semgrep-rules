@@ -61,3 +61,10 @@ export async function okOutputIsContent(task: string) {
   // ok: llm-output-to-file-path
   fs.writeFileSync(path.join(WORKSPACE, "answer.txt"), completion.choices[0].message.content ?? "");
 }
+
+export async function validatedTool(task: string) {
+  const completion = await client.chat.completions.create({ model: "model-name", messages: [{ role: "user", content: task }] });
+  const safePath = await validatePath(completion.choices[0].message.content ?? "", [WORKSPACE]);
+  // ok: llm-output-to-file-path
+  return fs.readFileSync(safePath, "utf8");
+}

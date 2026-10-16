@@ -70,3 +70,17 @@ def ok_model_output_is_content_not_path(task: str):
     # ok: llm-output-to-file-path
     with open("/srv/agent/output.txt", "w") as f:
         f.write(resp.choices[0].message.content)
+
+
+def validated_tool(task: str):
+    resp = client.responses.create(model="model-name", input=task)
+    target = BASE / resp.output_text
+    validate_workspace_path(target, BASE)
+    # ok: llm-output-to-file-path
+    return target.read_text()
+
+
+def names_only(task: str):
+    resp = client.responses.create(model="model-name", input=task)
+    # ok: llm-output-to-file-path
+    return Path(resp.output_text).name

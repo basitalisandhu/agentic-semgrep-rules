@@ -3,7 +3,7 @@ rules:
     languages: [python]
     severity: WARNING
     message: >-
-      '$LOADER' unpickles data, and unpickling executes arbitrary code embedded in the file.
+      This call unpickles data, and unpickling executes arbitrary code embedded in the file.
       Model artefacts, embeddings caches, tokenizers and agent memory files that come from a hub,
       a bucket, a user upload or an earlier agent run are untrusted. Use a data-only format
       (safetensors, ONNX, JSON, numpy .npy with allow_pickle=False), verify checksums or

@@ -1,6 +1,29 @@
 # Smoke test report
 
-Date: 2026-10-03. Semgrep 1.179.0. Pack: 36 rules (23 Python, 13 TypeScript/JavaScript).
+## 2026-10-16: real agent codebases
+
+Semgrep 1.181.0, whole pack, against two public agent repositories cloned read-only at the commits below:
+
+| Target | Commit | Files scanned | Findings before | Findings after | False positives before | False positives after |
+|---|---|---|---|---|---|---|
+| [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) (TypeScript and Python MCP servers) | `bbb701e` | 194 | 6 | 1 | 5 | 0 |
+| [openai/openai-agents-python](https://github.com/openai/openai-agents-python) (SDK, examples, tests) | `17d994b` | 613 | 26 | 9 | 17 | 0 |
+
+The remaining 10 findings are real for each rule's definition: five FastMCP example servers on SSE or streamable HTTP with no auth, one SSE demo transport with no auth, and four scripts that accept an API key or token as a command-line argument.
+
+False positives found and fixed:
+
+- `mcp-tool-param-to-file-path` (4) and `agent-tool-param-to-file-path` (1): paths checked by a helper such as `validatePath(args.path, allowed)` or `validate_repo_path(path, repo)` were still reported. A helper whose name says it validates, checks, ensures, asserts or verifies a path now sanitises its argument (by side effect) and its return value. The same applies to both `llm-output-to-file-path` rules.
+- `agent-tool-param-to-file-path` (1): `Path(p).name` was reported because `Path(...)` itself was a sink. Building a `Path` touches no file, so `Path(...)` is no longer a sink; the `read_text`, `open`, `unlink` and other method sinks still catch real use.
+- `llm-api-key-logged` (Python, 4): the secret's taint flowed through any call that received it, so `print(result.final_output)` after `AsyncOpenAI(api_key=key)`, or printing a list fetched with a token, was reported. Only string, container and logging calls now pass the secret through.
+- `langchain-dangerous-tools` (11): the OpenAI Agents SDK's own `ShellTool`, which takes an explicit executor or sandbox environment, matched the LangChain class name. `agents.ShellTool` is now excluded.
+- `fastmcp-bind-all-interfaces` (1): `uvicorn.run(app, host="0.0.0.0")` for a FastAPI app matched `$MCP.run(host=...)`. `uvicorn`, `hypercorn`, Flask and FastAPI apps are excluded; `uvicorn.run(mcp.sse_app(), ...)` is still reported.
+
+Also fixed: 19 rule messages named a metavariable (`$SINK`, `$PARAM`, `$LOADER`, `$TRANSPORT`) that Semgrep did not bind in taint mode, so users saw the literal text `'$SINK'`. The messages no longer use them, and `scripts/check_fixtures.py` now fails on any reported message that still shows a `$NAME`.
+
+## 2026-10-03: first smoke test
+
+Semgrep 1.179.0. Pack: 36 rules (23 Python, 13 TypeScript/JavaScript).
 
 ## Method
 

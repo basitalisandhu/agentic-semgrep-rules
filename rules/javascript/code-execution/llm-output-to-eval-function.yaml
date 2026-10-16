@@ -3,7 +3,7 @@ rules:
     languages: [javascript, typescript]
     severity: ERROR
     message: >-
-      Text returned by a language model flows into '$SINK', which compiles and runs it as
+      Text returned by a language model flows into a call that compiles and runs it as
       JavaScript. A prompt injection in any page, document or tool result the model has read becomes
       arbitrary code execution in this process (the vm module is not a security boundary). Do not
       execute model output. If generated code must run, use an isolated sandbox (isolated-vm, a

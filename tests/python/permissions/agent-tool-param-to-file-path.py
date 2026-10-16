@@ -77,3 +77,31 @@ def append_note(text: str) -> str:
     with open(WORKSPACE / "notes.txt", "a") as f:
         f.write(text)
     return "ok"
+
+
+@mcp.tool()
+def read_validated(repo_path: str) -> str:
+    target = Path(repo_path)
+    validate_repo_path(target, WORKSPACE)
+    # ok: agent-tool-param-to-file-path
+    return target.read_text()
+
+
+@mcp.tool()
+async def read_resolved(path: str) -> str:
+    safe = await ensure_safe_path(path, WORKSPACE)
+    # ok: agent-tool-param-to-file-path
+    return Path(safe).read_text()
+
+
+@mcp.tool()
+def known_names(paths: list[str]) -> list[str]:
+    # ok: agent-tool-param-to-file-path
+    return sorted(Path(p).name for p in paths)
+
+
+@mcp.tool()
+def read_normalised(path: str) -> str:
+    cleaned = normalise(path)
+    # ruleid: agent-tool-param-to-file-path
+    return Path(cleaned).read_text()

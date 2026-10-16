@@ -28,6 +28,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ANNOTATION = re.compile(r"(#|//)\s*ruleid:\s*([a-z0-9-]+)")
 
 
+METAVARIABLE = re.compile(r"\$[A-Z][A-Z0-9_]*")
+
+
 def main(argv: list[str]) -> int:
     report = "--report" in argv
     config = pathlib.Path(argv[argv.index("--config") + 1]) if "--config" in argv else ROOT / "rules"
@@ -53,9 +56,14 @@ def main(argv: list[str]) -> int:
                 print("semgrep error:", err.get("message", err))
             return 1
         findings = collections.defaultdict(set)
+        unrendered = 0
         for result in data["results"]:
             rule_id = result["check_id"].split(".")[-1]
             findings[(rule_id, result["path"])].add(result["start"]["line"])
+            # A message that names a metavariable Semgrep could not bind prints "$SINK" to users.
+            if leftover := METAVARIABLE.findall(result["extra"]["message"]):
+                unrendered += 1
+                print(f"UNRENDERED {rule_id} {result['path']}: message shows {', '.join(leftover)}")
         expected_total = 0
         for fixture in (work / "tests").rglob("*"):
             if fixture.is_file():
@@ -81,7 +89,7 @@ def main(argv: list[str]) -> int:
             f"{unannotated} findings on unannotated lines, "
             f"{len(data['paths']['scanned'])} files scanned"
         )
-        if unannotated or total != expected_total:
+        if unannotated or unrendered or total != expected_total:
             return 1
         return 0
 

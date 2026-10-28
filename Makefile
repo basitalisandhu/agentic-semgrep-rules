@@ -5,12 +5,13 @@
 # make smoke     scan the fixtures and any extra paths in SMOKE_PATHS and report counts
 # make sarif     produce results.sarif for the current directory
 # make bundle    regenerate the single-file agentic-semgrep-rules.yaml
+# make test-scripts  fuzz and scaling tests for the scripts (pytest)
 
 SEMGREP ?= semgrep
 SEMGREP_FLAGS ?= --metrics=off --disable-version-check
 SMOKE_PATHS ?=
 
-.PHONY: test validate smoke sarif audit-fixtures lint-metadata bundle bundle-check help
+.PHONY: test test-scripts validate smoke sarif audit-fixtures lint-metadata bundle bundle-check help
 
 help:
 	@grep -E '^# make' Makefile | sed 's/^# //'
@@ -21,6 +22,9 @@ test:
 
 validate: lint-metadata bundle-check
 	$(SEMGREP) --validate --config rules $(SEMGREP_FLAGS)
+
+test-scripts:
+	python3 -m pytest -q scripts/tests
 
 lint-metadata:
 	python3 scripts/check_metadata.py rules

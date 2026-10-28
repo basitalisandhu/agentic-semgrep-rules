@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-28
+
+### Added
+
+- Autofix for `langchain-allow-dangerous-code`, `langchain-allow-dangerous-requests` and `langchain-allow-dangerous-deserialization`: `fix-regex` sets the flag to `False`, the library default, with `.fixed.py` fixtures that `semgrep --test` checks (3/3 fix tests pass). README section "Autofix".
+- README Troubleshooting section.
+- `scripts/tests/`: seeded, time-bounded fuzz tests for `check_metadata.py` and `bundle.py`, scaling tests (the pack on the fixture tree copied 1x and 10x: 1.8s and 4.7s on Semgrep 1.181.0; the metadata lint on ten copies of every rule), and an end-to-end test that installs Semgrep in a fresh venv and runs the README quick start and Example. CI runs them; `make test-scripts` runs the first two.
+
+### Fixed
+
+- `check_metadata.py` and `bundle.py` crashed with a traceback on a rule file that is not UTF-8, is not valid YAML, is nested too deeply, has no `rules` list or holds a rule that is not a mapping; they now exit 2 naming the file. Fields of the wrong type (a number for `message`, a mapping for `metadata.cwe`) are lint problems instead of crashes.
+- `check_fixtures.py` now skips `<rule>.fixed.<ext>` files (expected autofix output, not inputs), exits 2 when `--config` has no value or does not exist or when `semgrep` is not on PATH; `bundle.py --out` without a value exits 2.
+- README FAQ named the action as `@v1`, a tag that does not exist; it is `@v0`.
+
+### Changed
+
+- The remaining unpinned actions in `ci.yml`, `release.yml` and `action.yml` are pinned by commit SHA.
+
 ## [0.2.0] - 2026-10-16
 
 ### Fixed

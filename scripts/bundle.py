@@ -20,6 +20,9 @@ import sys
 
 import yaml
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _ruleio import RuleFileError, load_rules  # noqa: E402
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RULES = ROOT / "rules"
 DEFAULT_OUT = ROOT / "agentic-semgrep-rules.yaml"
@@ -29,8 +32,12 @@ def build() -> str:
     rules = []
     for path in sorted(RULES.rglob("*.yaml")):
         rel = path.relative_to(RULES)
+        if len(rel.parts) != 3:
+            raise RuleFileError(f"{path}: rule files live at rules/<language>/<category>/<rule-id>.yaml")
         language, category = rel.parts[0], rel.parts[1]
-        for rule in yaml.safe_load(path.read_text())["rules"]:
+        for rule in load_rules(path):
+            if not isinstance(rule.get("id"), str):
+                raise RuleFileError(f"{path}: a rule has no string 'id'")
             rule = dict(rule)
             rule["id"] = f"{language}.{category}.{rule['id']}"
             rules.append(rule)
@@ -48,8 +55,15 @@ def build() -> str:
 def main(argv: list[str]) -> int:
     out = DEFAULT_OUT
     if "--out" in argv:
+        if argv.index("--out") + 1 >= len(argv):
+            print("error: --out needs a file name")
+            return 2
         out = pathlib.Path(argv[argv.index("--out") + 1])
-    text = build()
+    try:
+        text = build()
+    except RuleFileError as exc:
+        print(f"error: {exc}")
+        return 2
     if "--check" in argv:
         current = out.read_text() if out.exists() else ""
         if current != text:

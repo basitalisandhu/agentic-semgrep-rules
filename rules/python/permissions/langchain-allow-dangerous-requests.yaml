@@ -8,6 +8,10 @@ rules:
       - pattern-either:
           - pattern: $CALL(..., allow_dangerous_requests=True, ...)
           - pattern: $OBJ.$CALL(..., allow_dangerous_requests=True, ...)
+    # Autofix: allow_dangerous_requests=False is the library default, so the fix keeps the call and turns the risky behaviour off.
+    fix-regex:
+      regex: '\ballow_dangerous_requests\s*=\s*True\b'
+      replacement: 'allow_dangerous_requests=False'
     metadata:
       category: security
       subcategory: [audit]

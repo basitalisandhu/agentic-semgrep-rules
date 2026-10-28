@@ -8,6 +8,10 @@ rules:
       - pattern-either:
           - pattern: $CALL(..., allow_dangerous_deserialization=True, ...)
           - pattern: $OBJ.$CALL(..., allow_dangerous_deserialization=True, ...)
+    # Autofix: allow_dangerous_deserialization=False is the library default, so the fix keeps the call and turns the risky behaviour off.
+    fix-regex:
+      regex: '\ballow_dangerous_deserialization\s*=\s*True\b'
+      replacement: 'allow_dangerous_deserialization=False'
     metadata:
       category: security
       subcategory: [audit]

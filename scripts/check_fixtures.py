@@ -33,7 +33,13 @@ METAVARIABLE = re.compile(r"\$[A-Z][A-Z0-9_]*")
 
 def main(argv: list[str]) -> int:
     report = "--report" in argv
+    if "--config" in argv and argv.index("--config") + 1 >= len(argv):
+        print("error: --config needs a rules directory or a bundle file")
+        return 2
     config = pathlib.Path(argv[argv.index("--config") + 1]) if "--config" in argv else ROOT / "rules"
+    if not config.exists():
+        print(f"error: {config}: no such file or directory")
+        return 2
     with tempfile.TemporaryDirectory() as tmp:
         work = pathlib.Path(tmp)
         if config.is_dir():
@@ -41,16 +47,27 @@ def main(argv: list[str]) -> int:
         else:
             shutil.copy(config, work / "rules.yaml")
         shutil.copytree(ROOT / "tests", work / "tests")
+        # <rule>.fixed.<ext> files are the expected autofix output for `semgrep --test`, not inputs.
+        for fixed in (work / "tests").rglob("*.fixed.*"):
+            fixed.unlink()
         (work / ".semgrepignore").write_text(".git/\n")
         cmd = [
             "semgrep", "--config", "rules" if config.is_dir() else "rules.yaml",
             "--metrics=off", "--disable-version-check", "--json", "--quiet", "tests",
         ]
-        proc = subprocess.run(cmd, cwd=work, capture_output=True, text=True)
+        try:
+            proc = subprocess.run(cmd, cwd=work, capture_output=True, text=True)
+        except FileNotFoundError:
+            print("error: semgrep is not on PATH; pip install semgrep==1.181.0")
+            return 2
         if proc.returncode not in (0, 1):
             print(proc.stderr)
             return proc.returncode
-        data = json.loads(proc.stdout)
+        try:
+            data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            print(f"error: semgrep did not print JSON: {proc.stderr.strip()[-500:]}")
+            return 2
         if data.get("errors"):
             for err in data["errors"]:
                 print("semgrep error:", err.get("message", err))

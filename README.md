@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: basitalisandhu/agentic-semgrep-rules@v0   # or pin a release tag such as v0.2.0
+      - uses: basitalisandhu/agentic-semgrep-rules@v0   # or pin a release tag such as v0.3.0
         with:
           severity: ERROR        # fail the job at this level or above (INFO, WARNING, ERROR)
           upload-sarif: "true"   # publish all findings to the Security tab
@@ -172,7 +172,7 @@ The hook runs the bundled rules on staged Python, TypeScript and JavaScript file
 ```yaml
 repos:
   - repo: https://github.com/basitalisandhu/agentic-semgrep-rules
-    rev: v0.2.0
+    rev: v0.3.0
     hooks:
       - id: agentic-semgrep-rules
 ```
@@ -187,6 +187,22 @@ repos:
       - id: semgrep
         args: ["--config", "https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml", "--error", "--metrics=off"]
 ```
+
+### Autofix
+
+The three LangChain flag rules (`langchain-allow-dangerous-code`, `langchain-allow-dangerous-requests` and `langchain-allow-dangerous-deserialization`) carry a fix that sets the flag to `False`, the library default. Preview the changes with `semgrep --config <bundle> --autofix --dryrun .` and apply them with `--autofix`. Turning the flag off makes those components refuse the risky operation, so run your tests afterwards; where the behaviour is needed, follow the rule message (sandbox it) instead of applying the fix.
+
+### Troubleshooting
+
+| What you see | Cause and fix |
+|---|---|
+| `semgrep: command not found` | Semgrep is not on PATH. `pip install semgrep` (or `pipx install semgrep`), then open a new shell. |
+| Rule ids print as `rules.python...` or `some.dir.python...` instead of `python...` | Semgrep prefixes rule ids with the path of a local config. That is expected; the URL form and a bundle in the working directory print the short id. `# nosemgrep: llm-output-to-exec-eval` (the short id) works whatever the prefix. |
+| No findings in files under a `tests/` folder | Semgrep's default ignore list skips `tests/` when the project has no `.semgrepignore`. Add one (an empty file, or one listing what you do want ignored) to scan them. |
+| `--config` with a URL to the `rules` folder fails | Semgrep accepts a URL only for a single file. Use the bundle URL above, or clone and pass `rules/`. |
+| The command exits 1 in CI | `--error` makes any finding fail the run. Drop `--error` to report only, or add `--severity ERROR` to fail only on ERROR-level rules. |
+| A finding you have reviewed and accept | Add `# nosemgrep: <rule-id>` (or `// nosemgrep: <rule-id>`) on the line, with a comment saying why. If the rule is wrong for your code, open an issue with the snippet. |
+| `make test-scripts` or `python3 scripts/check_metadata.py` prints `error: <file>: invalid YAML ...` and exits 2 | A rule file under `rules/` does not parse. The message names the file and the line Semgrep's YAML reader stopped at. |
 
 ## Example
 
@@ -230,7 +246,7 @@ Every rule ships with positive and negative fixtures and the suite fails on any 
 Yes. This pack has 36 rules, 23 for Python and 13 for TypeScript and JavaScript, each with a tested fixture, a CWE, an OWASP LLM Top 10 (2025) mapping and a message that names the fix. They cover model output reaching `exec`, shells, SQL, HTTP requests, file paths and HTML; user input written into system prompts; tool parameters that reach a shell or a file path; LangChain dangerous-code and dangerous-requests flags; MCP servers without authentication or bound to all interfaces; hard-coded or logged provider keys; and unsafe model and config loading. Run it with `semgrep --config https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml .`
 
 **How do I catch eval of model output or unbounded tool permissions in CI?**
-Pin Semgrep and run the bundle with `--error`: `semgrep --config https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml --metrics=off --error --severity ERROR .` exits non-zero when an ERROR-level rule fires (drop `--severity ERROR` to fail on warnings too). On GitHub, use the action `basitalisandhu/agentic-semgrep-rules@v1`, which installs Semgrep, writes `results.sarif`, uploads it to code scanning and fails the job at the severity you choose. A pre-commit hook for staged files is in the "Install and run" section above.
+Pin Semgrep and run the bundle with `--error`: `semgrep --config https://raw.githubusercontent.com/basitalisandhu/agentic-semgrep-rules/main/agentic-semgrep-rules.yaml --metrics=off --error --severity ERROR .` exits non-zero when an ERROR-level rule fires (drop `--severity ERROR` to fail on warnings too). On GitHub, use the action `basitalisandhu/agentic-semgrep-rules@v0`, which installs Semgrep, writes `results.sarif`, uploads it to code scanning and fails the job at the severity you choose. A pre-commit hook for staged files is in the "Install and run" section above.
 
 **Which frameworks and SDKs do the rules understand?**
 Sources: the OpenAI (`chat.completions.create`, `responses.create`), Anthropic (`messages.create`), LiteLLM, Ollama and Google GenAI SDK calls, the Vercel AI SDK (`generateText`, `streamText`, `generateObject`), LangChain and LangGraph `invoke`, `run`, `predict` and `stream` on chains, agents, models and graphs, and the response shapes only model SDKs produce (`.choices[0].message.content`, `.output_text`, `.content[0].text`). Tool-parameter rules recognise FastMCP and the official MCP SDKs, LangChain `@tool` and `DynamicStructuredTool`, OpenAI Agents `@function_tool`, pydantic-ai `@agent.tool_plain`, Semantic Kernel `@kernel_function` and Vercel AI `tool()`. Go and Java are on the roadmap.
@@ -247,7 +263,7 @@ Yes to both. The pack is MIT licensed, so it can be run in commercial CI and ven
 - Go and Java coverage for the `llm-output-to-*` family.
 - Rules for agent memory and RAG stores (unsanitised retrieval text in prompts, pickle-backed vector stores).
 - Secrets in agent configuration files (`.mcp.json`, desktop-client MCP config files, `.env` committed next to agent code) via the generic language.
-- Autofix suggestions (`fix:`) for the flag-based rules.
+- Autofix suggestions (`fix:`) for the remaining flag-based rules (the three LangChain flags have one since 0.3.0; `yaml-unsafe-load` and `torch-load-without-weights-only` are open good first issues).
 - Cross-file (interprocedural) variants when Semgrep's open-source engine supports them.
 
 ## Related projects

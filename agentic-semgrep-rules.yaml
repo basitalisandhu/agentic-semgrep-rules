@@ -1651,6 +1651,9 @@ rules:
   - pattern-either:
     - pattern: $CALL(..., allow_dangerous_deserialization=True, ...)
     - pattern: $OBJ.$CALL(..., allow_dangerous_deserialization=True, ...)
+  fix-regex:
+    regex: \ballow_dangerous_deserialization\s*=\s*True\b
+    replacement: allow_dangerous_deserialization=False
   metadata:
     category: security
     subcategory:
@@ -2726,6 +2729,9 @@ rules:
   - pattern-either:
     - pattern: $CALL(..., allow_dangerous_code=True, ...)
     - pattern: $OBJ.$CALL(..., allow_dangerous_code=True, ...)
+  fix-regex:
+    regex: \ballow_dangerous_code\s*=\s*True\b
+    replacement: allow_dangerous_code=False
   metadata:
     category: security
     subcategory:
@@ -2765,6 +2771,9 @@ rules:
   - pattern-either:
     - pattern: $CALL(..., allow_dangerous_requests=True, ...)
     - pattern: $OBJ.$CALL(..., allow_dangerous_requests=True, ...)
+  fix-regex:
+    regex: \ballow_dangerous_requests\s*=\s*True\b
+    replacement: allow_dangerous_requests=False
   metadata:
     category: security
     subcategory:
